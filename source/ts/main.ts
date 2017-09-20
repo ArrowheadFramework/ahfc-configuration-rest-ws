@@ -1,16 +1,17 @@
-import {
-    ServiceDiscoveryDNSSD
-} from "./core/ServiceDiscoveryDNSSD"
+import * as core from "./core"
 
-let sd = new ServiceDiscoveryDNSSD({
-    hostnames: ["arrowhead.ltu.se"],
+
+let serviceDiscovery = new core.ServiceDiscoveryDNSSD({
+    hostnames: ["dns-sd.org"],
+    nameServerAddresses: ["8.8.8.8"],
 });
-sd.lookupTypes()
+
+serviceDiscovery.lookupTypes()
     .then(types => {
         types.forEach(type => {
-            sd.lookupIdentifiers(type)
+            serviceDiscovery.lookupIdentifiers(type)
                 .then(identifiers => identifiers.forEach(identifier => {
-                    sd.lookupRecord(identifier)
+                    serviceDiscovery.lookupRecord(identifier)
                         .then(record => console.log("" + record))
                         .catch(error => {
                             console.log(error);

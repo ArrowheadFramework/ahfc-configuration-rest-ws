@@ -1,6 +1,5 @@
-import { Buffer } from "buffer";
 import * as crypto from "crypto";
-import * as dns from "dns";
+import * as ddns from "./ddns";
 import * as os from "os";
 import {
     ServiceDiscovery,
@@ -13,10 +12,11 @@ import {
  * Provides a `ServiceDiscovery` implementation based on the DNS-SD protocol.
  */
 export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
-    private browsingDomains: () => Promise<string[]>;
-    private registrationDomains: () => Promise<string[]>;
-    private hostnames: () => Promise<string[]>;
-    private resolver = new dns.Resolver();
+    private readonly resolver: ddns.Resolver;
+
+    private readonly browsingDomains: () => Promise<string[]>;
+    private readonly registrationDomains: () => Promise<string[]>;
+    private readonly hostnames: () => Promise<string[]>;
 
     /**
      * Creates new DNS-SD `ServiceDiscovery` instance.
@@ -24,22 +24,26 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
      * @param configuration DNS-SD configuration.
      */
     public constructor(configuration: ServiceDiscoveryDNSSDConfiguration = {}) {
+        this.resolver = new ddns.Resolver(configuration.nameServerAddresses);
+
         if (configuration.browsingDomains) {
             const domains = configuration.browsingDomains.slice();
             this.browsingDomains = () => Promise.resolve(domains);
         } else {
-            this.browsingDomains = () => this.hostnames().then(hostnames =>
-                this.resolveAll("PTR", hostnames
-                    .map(domain => "b._dns-sd._udp." + domain)));
+            this.browsingDomains = () => this.hostnames()
+                .then(domains => this.resolver.resolvePTRs(domains
+                    .map(domain => "b._dns-sd._udp." + domain)))
+                .then(results => this.removeAndLogAnyErrors(results));
         }
 
         if (configuration.registrationDomains) {
             const domains = configuration.registrationDomains.slice();
             this.registrationDomains = () => Promise.resolve(domains);
         } else {
-            this.browsingDomains = () => this.hostnames().then(hostnames =>
-                this.resolveAll("PTR", hostnames
-                    .map(domain => "r._dns-sd._udp." + domain)));
+            this.registrationDomains = () => this.hostnames()
+                .then(domains => this.resolver.resolvePTRs(domains
+                    .map(domain => "r._dns-sd._udp." + domain)))
+                .then(results => this.removeAndLogAnyErrors(results));
         }
 
         if (configuration.hostnames) {
@@ -47,7 +51,8 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
             this.hostnames = () => Promise.resolve(hostnames);
         } else {
             this.hostnames = () =>
-                this.reverseAll(externalNetworkInterfaceAddresses())
+                this.resolver.reverseAll(externalNetworkInterfaceAddresses())
+                    .then(results => this.removeAndLogAnyErrors(results))
                     .then(names => names.reduce((hostnames, name) => {
                         const index = name.indexOf(".");
                         if (index >= 0) {
@@ -56,10 +61,6 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
                         return hostnames;
                     }, new Array<string>()));
 
-        }
-
-        if (configuration.nameServerAddresses) {
-            this.resolver.setServers(configuration.nameServerAddresses);
         }
 
         function externalNetworkInterfaceAddresses(): string[] {
@@ -77,95 +78,80 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
         }
     }
 
+    private removeAndLogAnyErrors<T>(results: Array<T | Error>): T[] {
+        return results.reduce((browsingDomains, result) => {
+            if (result instanceof Error) {
+                console.log(result); // TODO: Proper logger.
+            } else {
+                browsingDomains.push(result);
+            }
+            return browsingDomains;
+        }, []);
+    }
+
     public lookupTypes(): Promise<ServiceType[]> {
         return this.browsingDomains()
-            .then(domains => this.resolveAll("PTR", domains
+            .then(domains => this.resolver.resolvePTRs(domains
                 .map(domain => "_services._dns-sd._udp." + domain)))
+            .then(results => this.removeAndLogAnyErrors(results))
             .then(types => types.map(type => new ServiceTypeDNSSD(type)));
     }
 
     public lookupIdentifiers(type: ServiceType): Promise<ServiceIdentifier[]> {
-        return this.resolve("PTR", type.toString())
-            .then(rdata => rdata.map(item =>
-                new ServiceIdentifierDNSSD(item)));
+        return this.resolver.resolvePTR(type.toString())
+            .then(rdata => rdata.map(item => new ServiceIdentifierDNSSD(item)));
     }
 
     public lookupRecord(identifier: ServiceIdentifier): Promise<ServiceRecord> {
-        const rrname = identifier.toString();
+        const hostname = identifier.toString();
         return Promise.all([
-            this.resolve("SRV", rrname),
-            this.resolve("TXT", rrname)])
+            this.resolver.resolveSRV(hostname),
+            this.resolver.resolveTXT(hostname)])
             .then(([srv, txt]) => new ServiceRecordDNSSD(identifier, srv, txt));
     }
 
     public publish(record: ServiceRecord): Promise<void> {
-        throw new Error("Method not implemented.");
+        // TODO: Registration domains? What?
+        // TODO: TSIG?
+
+        const domain = record.hostname;
+        const services = "_services._dns-sd._udp." + domain;
+        const type = record.serviceType + "." + domain;
+        const name = record.serviceName + "." + type;
+
+        const ttl = 3600; // TODO: What? How long?
+
+        const updates = [
+            new ddns.ResourceRecord(services, ddns.Type.PTR, ddns.DClass.IN,
+                ttl, new ddns.PTR(type)),
+            new ddns.ResourceRecord(type, ddns.Type.PTR, ddns.DClass.IN, ttl,
+                new ddns.PTR(name)),
+            new ddns.ResourceRecord(name, ddns.Type.SRV, ddns.DClass.IN, ttl,
+                new ddns.SRV(0, 0, record.port, record.endpoint)),
+            new ddns.ResourceRecord(name, ddns.Type.TXT, ddns.DClass.IN, ttl,
+                ddns.TXT.fromAttributes(record.metadata))
+        ];
+
+        let last = 0, current;
+        while ((current = record.serviceType.indexOf(".", last)) >= 0) {
+            const rrname = record.serviceType.substring(last) + "." + domain;
+            updates.push(new ddns.ResourceRecord(rrname, ddns.Type.PTR,
+                ddns.DClass.IN, ttl, new ddns.PTR(name)));
+            last = current + 1;
+        }
+
+        return this.resolver.send(new ddns.Message(
+            ddns.Message.newID(),
+            { opcode: ddns.OpCode.UPDATE },
+            [new ddns.ResourceRecord(domain, ddns.Type.SOA, ddns.DClass.IN)],
+            [new ddns.ResourceRecord(name, ddns.Type.ANY, ddns.DClass.NONE)],
+            updates
+        )).then(response => undefined);
     }
 
     public unpublish(record: ServiceRecord): Promise<void> {
         throw new Error("Method not implemented.");
     }
-
-    private resolve(rrtype: string, rrname: string): Promise<any> {
-        return new Promise((resolve, reject) => {
-            this.resolver.resolve(rrname, rrtype, (error, value) => {
-                if (error) {
-                    reject(error);
-                } else {
-                    resolve(value);
-                }
-            });
-        });
-    }
-
-    private resolveAll(rrtype: string, rrnames: string[]): Promise<any[]> {
-        return dnsFlatMap((rrname, callback) =>
-            this.resolver.resolve(rrname, rrtype, callback), rrnames);
-    }
-
-    private reverseAll(addresses: string[]): Promise<string[]> {
-        return dnsFlatMap((address, callback) =>
-            this.resolver.reverse(address, callback), addresses);
-    }
-}
-
-type DnsCallback<T> = (error: NodeJS.ErrnoException, value: T) => void;
-type DnsFunction<T> = (hostname: string, callback: DnsCallback<T>) => void;
-
-function dnsMap<T>(f: DnsFunction<T>, rrnames: string[]): Promise<T[]> {
-    return new Promise((resolve, reject) => {
-        const errors = new Array<NodeJS.ErrnoException>();
-        const result = new Array<T>();
-
-        let remaining = rrnames.length;
-        rrnames.forEach(rrname => {
-            f(rrname, (error, value) => {
-                remaining -= 1;
-
-                if (error) {
-                    errors.push(error);
-                } else {
-                    result.push(value);
-                }
-
-                if (remaining == 0) {
-                    if (result.length > 0) {
-                        resolve(result);
-                    } else {
-                        reject(errors);
-                    }
-                }
-            })
-        });
-    });
-}
-
-function dnsFlatMap<T>(f: DnsFunction<T[]>, rrnames: string[]): Promise<T[]> {
-    return dnsMap(f, rrnames)
-        .then(groups => groups.reduce((values, group) => {
-            values.push(...group);
-            return values;
-        }, new Array<T>()))
 }
 
 /**
@@ -191,7 +177,7 @@ export interface ServiceDiscoveryDNSSDConfiguration {
      * 
      * If not given, DNS hostnames are resolved by doing reverse DNS lookups on
      * the addresses of any local network interfaces, and then removing the
-     * least significant local hostname parts. If the local network interface
+     * least significant local hostname labels. If the local network interface
      * "eth0" has IPv4 address 192.168.0.2 and a reverse DNS lookup yields
      * "node2.example.arrowhead.eu", then "example.arrowhead.eu" will be used as
      * hostname. Note, however, that the use of VPN tunnels or other kinds of
@@ -202,8 +188,7 @@ export interface ServiceDiscoveryDNSSDConfiguration {
     /**
      * Addresses of used DNS/DNS-SD servers.
      *
-     * If not set, any DNS servers provided by the system hosting the
-     * application will be used.
+     * If not given, any DNS servers provided by the system will be used.
      */
     nameServerAddresses?: string[];
 }
@@ -268,16 +253,18 @@ class ServiceRecordDNSSD extends ServiceIdentifierDNSSD implements ServiceRecord
     public port: number;
     public metadata;
 
-    constructor(id: ServiceIdentifier, srv: dns.SrvRecord[], txt: string[][]) {
+    constructor(id: ServiceIdentifier, srvs: ddns.SRV[], txts: ddns.TXT[]) {
         super(id);
 
-        const record = selectRecordFrom(srv);
-        this.endpoint = record.name;
+        const record = selectSRVFrom(srvs);
+        this.endpoint = record.target;
         this.port = record.port;
-        this.metadata = createObjectFrom(txt);
+        this.metadata = txts.reduce((attributes, txt) => {
+            return Object.assign(attributes, txt.intoAttributes());
+        }, {});
 
-        function selectRecordFrom(srv: dns.SrvRecord[]): dns.SrvRecord {
-            let minPriority = 65536, options: dns.SrvRecord[] = [];
+        function selectSRVFrom(srv: ddns.SRV[]): ddns.SRV {
+            let minPriority = 65536, options: ddns.SRV[] = [];
             srv.forEach(record => {
                 if (minPriority > record.priority) {
                     minPriority = record.priority;
@@ -289,25 +276,6 @@ class ServiceRecordDNSSD extends ServiceIdentifierDNSSD implements ServiceRecord
             let total = options.reduce((sum, option) => sum + option.weight, 0);
             const cutoff = (crypto.randomBytes(1).readUInt8(0) / 255) * total;
             return options.find(option => (total -= option.weight) <= cutoff);
-        }
-
-        function createObjectFrom(txt: string[][]) {
-            const object = {};
-            txt.forEach(record => {
-                record.forEach(pair => {
-                    const valueOffset = pair.indexOf("=");
-                    let key, value;
-                    if (valueOffset >= 0) {
-                        key = pair.substring(0, valueOffset);
-                        value = pair.substring(valueOffset + 1);
-                    } else {
-                        key = pair;
-                        value = "";
-                    }
-                    object[key.trim()] = value.trim();
-                });
-            });
-            return object;
         }
     }
 
