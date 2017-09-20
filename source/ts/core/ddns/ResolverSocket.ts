@@ -63,7 +63,23 @@ export class ResolverSocket {
         }
         this.deferTryClose();
 
-        // Transmit outbound (unsent) messages.
+        // Reject any stale outbound messages.
+        {
+            const timeout = new Date().getTime() - this.timeoutInMs;
+            for (const [id, task] of this.inbound) {
+                if (timeout >= task.timeSent) {
+                    task.reject(new ResolverError(
+                        ResolverErrorCode.Other,
+                        task.request,
+                        undefined,
+                        new Error("Timeout")
+                    ));
+                    this.inbound.delete(id);
+                }
+            }
+        }
+
+        // Transmit any outbound messages.
         {
             const lengthBuffer = Buffer.alloc(2);
             this.outbound.forEach(task => {
@@ -90,6 +106,8 @@ export class ResolverSocket {
                 this.socket.write(requestBuffer);
 
                 this.inbound.set(task.request.id, task);
+
+                task.timeSent = new Date().getTime();
             });
             this.outbound = [];
         }
@@ -104,7 +122,10 @@ export class ResolverSocket {
             this.socket.on("close", hadError => {
                 this.connected = false;
                 this.socket = undefined;
-                if (this.inbound.size > 0 || this.outbound.length > 0) {
+                for (const task of this.inbound.values()) {
+                    this.outbound.push(task);
+                }
+                if (this.outbound.length > 0) {
                     this.poll();
                 }
             });
@@ -231,6 +252,7 @@ interface Task {
     request: Message,
     resolve: (response: Message) => void;
     reject: (error: Error) => void;
+    timeSent?: number,
 }
 
 /**
