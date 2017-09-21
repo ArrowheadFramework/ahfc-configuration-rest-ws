@@ -273,10 +273,10 @@ export class TSIG implements ResourceData {
         public readonly algorithmName: string,
         public readonly timeSigned: number,
         public readonly fudge: number,
-        public readonly mac: string,
+        public readonly mac: Buffer,
         public readonly originalId: number,
         public readonly error: number,
-        public readonly otherData: string
+        public readonly otherData: Buffer
     ) {
         this.rdlength = algorithmName.length + mac.length + otherData.length
             + 18;
@@ -287,10 +287,10 @@ export class TSIG implements ResourceData {
             reader.readName(),
             reader.readU48(),
             reader.readU16(),
-            reader.read(reader.readU16()).toString("binary"),
+            reader.read(reader.readU16()),
             reader.readU16(),
             reader.readU16(),
-            reader.read(reader.readU16()).toString("binary")
+            reader.read(reader.readU16())
         );
     }
 
@@ -299,11 +299,11 @@ export class TSIG implements ResourceData {
         writer.writeU48(this.timeSigned);
         writer.writeU16(this.fudge);
         writer.writeU16(this.mac.length);
-        writer.write(Buffer.from(this.mac, "binary"));
+        writer.write(this.mac);
         writer.writeU16(this.originalId);
         writer.writeU16(this.error);
         writer.writeU16(this.otherData.length);
-        writer.write(Buffer.from(this.otherData, "binary"));
+        writer.write(this.otherData);
     }
 }
 
