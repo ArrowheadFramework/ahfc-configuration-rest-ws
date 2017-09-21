@@ -134,8 +134,8 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
 
         let last = 0, current;
         while ((current = record.serviceType.indexOf(".", last)) >= 0) {
-            const rrname = record.serviceType.substring(last) + "." + domain;
-            updates.push(new ddns.ResourceRecord(rrname, ddns.Type.PTR,
+            const hostname = record.serviceType.substring(last) + "." + domain;
+            updates.push(new ddns.ResourceRecord(hostname, ddns.Type.PTR,
                 ddns.DClass.IN, ttl, new ddns.PTR(name)));
             last = current + 1;
         }
