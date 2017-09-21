@@ -41,9 +41,9 @@ export interface ServiceDiscovery {
  */
 export interface ServiceType {
     /**
-     * Domain where service is registered.
+     * Domain where service is registered, if known.
      */
-    readonly hostname: string;
+    readonly hostname?: string;
 
     /**
      * Service type name.
