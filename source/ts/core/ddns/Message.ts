@@ -165,4 +165,15 @@ export class Message {
         this.nextId = (this.nextId + 1) & 0xffff;
         return result;
     }
+
+    public toString(): string {
+        return "OPCODE=" + this.flags.opcode + "(" + OpCode[this.flags.opcode] + ")" +
+            (this.flags.qr
+                ? (",RCODE=" + this.flags.rcode + "(" + RCode[this.flags.rcode] + ")")
+                : "") + "," +
+                "QD=" + this.questions.length + "," +
+                "AN=" + this.answers.length + "," +
+                "NS=" + this.authorities.length + "," +
+                "AR=" + this.additionals.length;
+    }
 }
