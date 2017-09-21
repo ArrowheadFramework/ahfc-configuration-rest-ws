@@ -214,7 +214,7 @@ export class ResolverError extends Error {
     ) {
         super(cause instanceof Error
             ? cause.message
-            : response instanceof Message
+            : response
                 ? ("DNS error RCODE=" + response.flags.rcode)
                 : "DNS error");
         this.name = (this as any).constructor.name;
