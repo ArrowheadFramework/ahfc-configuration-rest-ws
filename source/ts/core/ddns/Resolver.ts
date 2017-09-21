@@ -248,6 +248,12 @@ export enum ResolverErrorCode {
     RequestTooLong,
 
     /**
+     * A sent message was never answered. If the message was sent over UDP it
+     * was retried several times before this error was generated.
+     */
+    RequestUnanswered,
+
+    /**
      * A DNS response message was received, but it is an error message. See the
      * `response` field of any associated `ResolverError` for more details.
      */
