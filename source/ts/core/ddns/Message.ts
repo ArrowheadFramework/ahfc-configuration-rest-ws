@@ -8,6 +8,8 @@ import { ResourceRecord } from "./ResourceRecord";
 export class Message {
     private static nextId: number = (Math.random() * 65535) | 0;
 
+    private _length?: number;
+
     /**
      * Creates new message.
      * 
@@ -112,7 +114,10 @@ export class Message {
      * @returns Byte length of message, if written using `write()`.
      */
     public length(): number {
-        return 12 +
+        if (this._length) {
+            return this._length
+        }
+        return this._length = 12 +
             this.questions.reduce((sum, rr) => sum + rr.length(true), 0) +
             this.answers.reduce((sum, rr) => sum + rr.length(), 0) +
             this.authorities.reduce((sum, rr) => sum + rr.length(), 0) +
