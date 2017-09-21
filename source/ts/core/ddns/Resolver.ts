@@ -212,11 +212,10 @@ export class ResolverError extends Error {
         public readonly response?: Message,
         public readonly cause?: Error,
     ) {
-        super(cause instanceof Error
-            ? cause.message
-            : response
-                ? ("DNS error RCODE=" + response.flags.rcode)
-                : "DNS error");
+        super("DNS error" + (cause instanceof Error
+            ? (" " + cause.message)
+            : (response ? (" RCODE=" + response.flags.rcode +
+                "(" + response.flags.rcode + ")") : "")));
         this.name = (this as any).constructor.name;
     }
 }
