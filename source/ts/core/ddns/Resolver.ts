@@ -266,7 +266,7 @@ export enum ResolverErrorCode {
     ResponseIDUnexpected,
 
     /**
-     * A DNS response message was received, but it is of an unexpected type. See
+     * A DNS response message was received, but was of an unexpected type. See
      * the `response` field of any associated `ResolverError` for more details.
      */
     ResponseNotExpected,
