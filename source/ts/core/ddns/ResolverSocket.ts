@@ -3,7 +3,7 @@ import * as dgram from "dgram";
 import { Reader, Writer } from "./io";
 import { Message } from "./Message";
 import * as net from "net";
-import { ResolverError, ResolverErrorCode } from "./Resolver";
+import { ResolverError, ResolverErrorKind } from "./Resolver";
 
 /**
  * A DNS resolver socket.
@@ -41,15 +41,15 @@ export class ResolverSocket {
         };
 
         const onError = (error: Error) => {
-            const code = error instanceof ResolverError
-                ? error.code
-                : ResolverErrorCode.Other;
-            this.tcpSocket.rejectAllTasksWith(code, error);
-            this.udpSocket.rejectAllTasksWith(code, error);
+            const kind = error instanceof ResolverError
+                ? error.kind
+                : ResolverErrorKind.Other;
+            this.tcpSocket.rejectAllTasksWith(kind, error);
+            this.udpSocket.rejectAllTasksWith(kind, error);
         };
         const onTimeout = () => {
             this.tcpSocket.rejectAllTasksWith(
-                ResolverErrorCode.RequestUnanswered
+                ResolverErrorKind.RequestUnanswered
             );
         };
         this.tcpSocket = new ResolverSocketTCP(
@@ -77,7 +77,7 @@ export class ResolverSocket {
             const requestLength = request.length();
             if (requestLength > 65535) {
                 reject(new ResolverError(
-                    ResolverErrorCode.RequestTooLong,
+                    ResolverErrorKind.RequestTooLong,
                     request
                 ));
                 return;
@@ -119,8 +119,8 @@ abstract class ResolverSocketTransport<T> {
         this.onUnrecoverableError = (error) => {
             this.onClosed(false);
             this.rejectAllTasksWith(error instanceof ResolverError
-                ? error.code
-                : ResolverErrorCode.Other, error);
+                ? error.kind
+                : ResolverErrorKind.Other, error);
             onUnrecoverableError(error);
         };
         this.options = options;
@@ -156,14 +156,14 @@ abstract class ResolverSocketTransport<T> {
             task.resolve(response);
         } else if (this.options.onUnhandledError) {
             this.options.onUnhandledError(new ResolverError(
-                ResolverErrorCode.ResponseIDUnexpected,
+                ResolverErrorKind.ResponseIDUnexpected,
                 undefined,
                 response
             ));
         }
     }
 
-    public rejectAllTasksWith(code: ResolverErrorCode, cause?: Error) {
+    public rejectAllTasksWith(kind: ResolverErrorKind, cause?: Error) {
         for (const task of this.inbound.values()) {
             reject(task);
         }
@@ -173,7 +173,7 @@ abstract class ResolverSocketTransport<T> {
 
         function reject(task: ResolverSocketTask) {
             task.reject(new ResolverError(
-                code,
+                kind,
                 task.request,
                 undefined,
                 cause
@@ -185,7 +185,7 @@ abstract class ResolverSocketTransport<T> {
     public enqueue(task: ResolverSocketTask) {
         if (this.inbound.has(task.request.id)) {
             task.reject(new ResolverError(
-                ResolverErrorCode.RequestIDInUse,
+                ResolverErrorKind.RequestIDInUse,
                 task.request
             ));
         } else {
@@ -264,7 +264,7 @@ abstract class ResolverSocketTransport<T> {
                     this.enqueue(task);
                 } else {
                     task.reject(new ResolverError(
-                        ResolverErrorCode.RequestUnanswered,
+                        ResolverErrorKind.RequestUnanswered,
                         task.request
                     ));
                 }

@@ -131,7 +131,7 @@ export class Resolver {
             if (socketIndex >= sockets.length) {
                 if (!error) {
                     error = new ResolverError(
-                        ResolverErrorCode.NoKnownNameServers,
+                        ResolverErrorKind.NoKnownNameServers,
                         request
                     );
                 }
@@ -143,14 +143,14 @@ export class Resolver {
                 .then(response => {
                     if (response.flags.rcode !== RCode.NOERROR) {
                         error = new ResolverError(
-                            ResolverErrorCode.ResponseBad,
+                            ResolverErrorKind.ResponseBad,
                             request,
                             response
                         );
                         tryNextSocket();
                     } else if (response.flags.opcode !== request.flags.opcode) {
                         error = new ResolverError(
-                            ResolverErrorCode.ResponseNotExpected,
+                            ResolverErrorKind.ResponseNotExpected,
                             request,
                             response
                         );
@@ -185,7 +185,7 @@ export class Resolver {
                     return;
                 }
                 if (successes === 0) {
-                    reject(new ResolverMultiError(results as Error[]));
+                    reject(new ResolverErrors(results as Error[]));
                 } else {
                     resolve(results);
                 }
@@ -201,21 +201,21 @@ export class ResolverError extends Error {
     /**
      * Creates new error object.
      * 
-     * @param code Error code.
+     * @param kind Error kind.
      * @param request Request message, if any.
      * @param response Response message, if any.
      * @param cause Cause of error, if any.
      */
     public constructor(
-        public readonly code: ResolverErrorCode,
+        public readonly kind: ResolverErrorKind,
         public readonly request?: Message,
         public readonly response?: Message,
         public readonly cause?: Error,
     ) {
-        super("DNS error" + (cause instanceof Error
-            ? (" " + cause.message)
-            : (response ? (" RCODE=" + response.flags.rcode +
-                "(" + response.flags.rcode + ")") : "")));
+        super("KIND=" + ResolverErrorKind[kind] +
+            (request ? (" REQ={" + request + "}") : "") +
+            (response ? (" RES={" + response + "}") : "") +
+            (cause ? (" CAUSE={" + cause + "}") : ""));
         this.name = (this as any).constructor.name;
     }
 }
@@ -223,7 +223,7 @@ export class ResolverError extends Error {
 /**
  * Enumerates different kinds of `ResolverSocket` errors.
  */
-export enum ResolverErrorCode {
+export enum ResolverErrorKind {
     /**
      * There is no domain name server to send requests to. 
      */
@@ -274,11 +274,11 @@ export enum ResolverErrorCode {
 /**
  * Holds multiple `Resolver` `Error`s.
  */
-export class ResolverMultiError extends Error {
+export class ResolverErrors extends Error {
     /**
      * Creates new error object.
      * 
-     * @param errors Error code,
+     * @param errors Wrapped errors.
      */
     public constructor(
         public readonly errors: Error[] = []
