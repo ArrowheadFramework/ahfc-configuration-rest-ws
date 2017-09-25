@@ -13,7 +13,7 @@ export class Message {
 
     /**
      * Creates new message.
-     * 
+     *
      * For most intents and purposes it is advisable to use `Message.newID()` to
      * generate identifiers for transmitted requests.
      */
@@ -38,7 +38,7 @@ export class Message {
 
     /**
      * Creates new DNS QUERY message.
-     * 
+     *
      * @param hostname Hostname to query.
      * @param type Query type.
      * @param rd Whether the query is to be recursive.
@@ -66,7 +66,7 @@ export class Message {
 
     /**
      * Reads message from source. 
-     * 
+     *
      * @param source Source of message.
      * @returns Read message.
      */
@@ -135,7 +135,7 @@ export class Message {
 
     /**
      * Writes message to sink.
-     * 
+     *
      * @param sink Destination of message.
      */
     public write(sink: Writer | Buffer) {

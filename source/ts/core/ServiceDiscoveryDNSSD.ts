@@ -18,14 +18,15 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
     private readonly browsingDomains: () => Promise<string[]>;
     private readonly registrationDomains: () => Promise<string[]>;
     private readonly hostnames: () => Promise<string[]>;
+    private readonly onUnhandledError: (error: Error) => void;
 
     /**
      * Creates new DNS-SD `ServiceDiscovery` instance.
-     * 
+     *
      * @param configuration DNS-SD configuration.
      */
     public constructor(configuration: ServiceDiscoveryDNSSDConfiguration = {}) {
-        this.resolver = new dns.Resolver(configuration.nameServerAddresses);
+        this.resolver = new dns.Resolver(configuration.nameServers);
         this.transactionSigner = configuration.transactionSigner;
 
         if (configuration.browsingDomains) {
@@ -65,6 +66,10 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
 
         }
 
+        this.onUnhandledError = configuration.onUnhandledError || (error => {
+            console.debug("Unhandled service discovery error: %s", error);
+        });
+
         function externalNetworkInterfaceAddresses(): string[] {
             const nifGroups = os.networkInterfaces();
             return Object.getOwnPropertyNames(nifGroups)
@@ -83,7 +88,7 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
     private removeAndLogAnyErrors<T>(results: Array<T | Error>): T[] {
         return results.reduce((browsingDomains, result) => {
             if (result instanceof Error) {
-                console.log(result); // TODO: Proper logger.
+                this.onUnhandledError(result);
             } else {
                 browsingDomains.push(result);
             }
@@ -163,21 +168,21 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
 export interface ServiceDiscoveryDNSSDConfiguration {
     /**
      * DNS-SD browsing domains.
-     * 
+     *
      * If not given, browsing domains will be discovered using `hostnames`.
      */
     browsingDomains?: string[];
 
     /**
      * DNS-SD registration domains.
-     * 
+     *
      * If not given, registration domains will be discovered using `hostnames`.
      */
     registrationDomains?: string[];
 
     /**
      * Relevant domain name server hostnames.
-     * 
+     *
      * If not given, DNS hostnames are resolved by doing reverse DNS lookups on
      * the addresses of any local network interfaces, and then removing the
      * least significant local hostname labels. If the local network interface
@@ -189,11 +194,13 @@ export interface ServiceDiscoveryDNSSDConfiguration {
     hostnames?: string[];
 
     /**
-     * Addresses of used DNS/DNS-SD servers.
+     * Addresses, and/or other settings regulating used DNS/DNS-SD servers.
+     *
+     * It is an error to provide domain names rather than concrete IP addresses.
      *
      * If not given, any DNS servers provided by the system will be used.
      */
-    nameServerAddresses?: string[];
+    nameServers?: Array<string | dns.ResolverSocketOptions>;
 
     /**
      * Object used to sign DNS update requests.
@@ -202,6 +209,15 @@ export interface ServiceDiscoveryDNSSDConfiguration {
      * service publish or unpublish operations will succeed.
      */
     transactionSigner?: dns.TransactionSigner;
+
+    /**
+     * Function called whenever an error is not handled.
+     *
+     * Unhandled errors are the result of being able to recover from an error.
+     * It might be of interest to log them, or handle them in some other way,
+     * for which reason this callback may be provided.
+     */
+    onUnhandledError?: (error: Error) => void;
 }
 
 class ServiceTypeDNSSD implements ServiceType {

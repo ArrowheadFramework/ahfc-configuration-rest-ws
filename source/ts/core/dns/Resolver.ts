@@ -3,7 +3,7 @@ import * as dns from "dns";
 import { Errors } from "../error";
 import { Message } from "./Message";
 import * as net from "net";
-import { ResolverSocket } from "./ResolverSocket";
+import { ResolverSocket, ResolverSocketOptions } from "./ResolverSocket";
 import { ResourceRecord } from "./ResourceRecord";
 import * as rdata from "./ResourceData";
 
@@ -13,11 +13,17 @@ import * as rdata from "./ResourceData";
 export class Resolver {
     private readonly sockets: ResolverSocket[];
 
-    public constructor(nameServerAddresses: string[] = dns.getServers()) {
-        this.sockets = nameServerAddresses.map(a => new ResolverSocket(a));
+    /**
+     * Creates new DNS resolver.
+     *
+     * @param nameServers Name server addresses or server socket options.
+     */
+    public constructor(nameServers?: Array<string | ResolverSocketOptions>) {
+        if (!nameServers) {
+            nameServers = dns.getServers();
+        }
+        this.sockets = nameServers.map(a => new ResolverSocket(a));
     }
-
-    // TODO: TSIG.
 
     /**
      * @param hostname Hostname to request PTR record targets of.
@@ -32,7 +38,7 @@ export class Resolver {
     /**
      * Requests PTR record targets of given hostnames. The returned promise is
      * only rejected if not a single record could be resolved.
-     * 
+     *
      * @param hostnames Hostnames to request PTR record targets of.
      * @return Promise of eventual PTR record targets.
      */
@@ -201,7 +207,7 @@ export class Resolver {
 export class ResolverError extends Error {
     /**
      * Creates new error object.
-     * 
+     *
      * @param kind Error kind.
      * @param request Request message, if any.
      * @param response Response message, if any.

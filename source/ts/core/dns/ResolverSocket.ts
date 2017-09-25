@@ -7,7 +7,7 @@ import { ResolverError, ResolverErrorKind } from "./Resolver";
 
 /**
  * A DNS resolver socket.
- * 
+ *
  * Maintains a UDP socket and a TCP socket, each with a queue of outbound DNS
  * requests and a set of inbound DNS responses. Provided requests are
  * transmitted via a transport selected by request byte size. Truncated or lost
@@ -23,7 +23,7 @@ export class ResolverSocket {
 
     /**
      * Creates new DNS resolver socket.
-     * 
+     *
      * @param options IP address of DNS server, or socket options object.
      */
     public constructor(options: string | ResolverSocketOptions) {
@@ -38,6 +38,9 @@ export class ResolverSocket {
             keepOpenForMs: options.keepOpenForMs || 3000,
             port: options.port || 53,
             timeoutInMs: options.timeoutInMs || 10000,
+            onUnhandledError: options.onUnhandledError || (error => {
+                console.debug("Unhandled resolver socket error: %s\n", error);
+            }),
         };
 
         const onError = (error: Error) => {
@@ -69,7 +72,7 @@ export class ResolverSocket {
 
     /**
      * Attempts to send DNS message to DNS server.
-     * 
+     *
      * @param request Message to send.
      */
     public send(request: Message): Promise<Message> {
@@ -154,7 +157,7 @@ abstract class ResolverSocketTransport<T> {
         if (task) {
             this.inbound.delete(response.id);
             task.resolve(response);
-        } else if (this.options.onUnhandledError) {
+        } else {
             this.options.onUnhandledError(new ResolverError(
                 ResolverErrorKind.ResponseIDUnexpected,
                 undefined,
@@ -217,7 +220,7 @@ abstract class ResolverSocketTransport<T> {
 
     /**
      * Opens socket transport and registers relevant socket event handlers.
-     * 
+     *
      * This function MUST return a socket object with event handlers registered
      * that WILL call `this.onOpened()`, `this.onClosed()` and
      * `this.onMessageReceived()` when appropriate.
@@ -470,7 +473,7 @@ export interface ResolverSocketOptions {
     /**
      * Time to keep socket open after successfully sending and receiving, in
      * milliseconds.
-     * 
+     *
      * Defaults to 3000 (3 seconds).
      */
     readonly keepOpenForMs?: number;
@@ -490,11 +493,11 @@ export interface ResolverSocketOptions {
 
     /**
      * Socket timeout, in milliseconds.
-     * 
+     *
      * If a period of inactivity while sending or receiving data via the socket
      * exceeds the given timeout, any outstanding messages are rejected with
      * a timeout error.
-     * 
+     *
      * Defaults to 10000 (10 seconds). 
      */
     readonly timeoutInMs?: number;

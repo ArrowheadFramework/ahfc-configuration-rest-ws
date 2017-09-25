@@ -19,7 +19,7 @@ export class ResourceRecord {
 
     /**
      * Reads record from given reader.
-     * 
+     *
      * @param reader Reader containing record data.
      * @param isQuestion Whether record is read from `Message` questions part.
      */
@@ -42,7 +42,7 @@ export class ResourceRecord {
 
     /**
      * Length of record, in bytes, if written using `Writer`.
-     * 
+     *
      * @param isQuestion Whether record would be part of `Message` questions.
      * @return Record length, in bytes.
      */
@@ -56,7 +56,7 @@ export class ResourceRecord {
 
     /**
      * Writes record to writer.
-     * 
+     *
      * @param writer Writer to receive record data.
      * @param isQuestion Whether record is to be part of `Message` questions.
      */

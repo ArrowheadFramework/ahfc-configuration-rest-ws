@@ -4,7 +4,7 @@
 export class Errors extends Error {
     /**
      * Creates new object holding multiple errors.
-     * 
+     *
      * @param errors Wrapped errors.
      */
     public constructor(

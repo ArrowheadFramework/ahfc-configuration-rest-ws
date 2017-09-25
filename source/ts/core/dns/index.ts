@@ -1,4 +1,5 @@
 export * from "./Resolver";
+export * from "./ResolverSocket";
 export * from "./constants";
 export * from "./Message";
 export * from "./ResourceData";

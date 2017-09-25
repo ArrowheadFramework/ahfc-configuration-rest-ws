@@ -18,7 +18,7 @@ export interface ResourceData {
 
 /**
  * Reads resource data object from give reader.
- * 
+ *
  * @param type Type of resource data to read.
  * @param rdlength Length of read resource data object.
  * @param reader Reader containing resource data object.
