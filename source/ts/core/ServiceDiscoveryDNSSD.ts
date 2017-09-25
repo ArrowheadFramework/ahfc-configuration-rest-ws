@@ -1,5 +1,5 @@
 import * as crypto from "crypto";
-import * as ddns from "./ddns";
+import * as dns from "./dns";
 import * as os from "os";
 import {
     ServiceDiscovery,
@@ -12,7 +12,7 @@ import {
  * Provides a `ServiceDiscovery` implementation based on the DNS-SD protocol.
  */
 export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
-    private readonly resolver: ddns.Resolver;
+    private readonly resolver: dns.Resolver;
 
     private readonly browsingDomains: () => Promise<string[]>;
     private readonly registrationDomains: () => Promise<string[]>;
@@ -24,7 +24,7 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
      * @param configuration DNS-SD configuration.
      */
     public constructor(configuration: ServiceDiscoveryDNSSDConfiguration = {}) {
-        this.resolver = new ddns.Resolver(configuration.nameServerAddresses);
+        this.resolver = new dns.Resolver(configuration.nameServerAddresses);
 
         if (configuration.browsingDomains) {
             const domains = configuration.browsingDomains.slice();
@@ -122,25 +122,25 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
         const ttl = 3600; // TODO: What? How long?
 
         const updates = [
-            new ddns.ResourceRecord(services, ddns.Type.PTR, ddns.DClass.IN,
-                ttl, new ddns.PTR(type)),
-            new ddns.ResourceRecord(type, ddns.Type.PTR, ddns.DClass.IN, ttl,
-                new ddns.PTR(name)),
-            new ddns.ResourceRecord(name, ddns.Type.SRV, ddns.DClass.IN, ttl,
-                new ddns.SRV(0, 0, record.port, record.endpoint)),
-            new ddns.ResourceRecord(name, ddns.Type.TXT, ddns.DClass.IN, ttl,
-                ddns.TXT.fromAttributes(record.metadata))
+            new dns.ResourceRecord(services, dns.Type.PTR, dns.DClass.IN,
+                ttl, new dns.PTR(type)),
+            new dns.ResourceRecord(type, dns.Type.PTR, dns.DClass.IN, ttl,
+                new dns.PTR(name)),
+            new dns.ResourceRecord(name, dns.Type.SRV, dns.DClass.IN, ttl,
+                new dns.SRV(0, 0, record.port, record.endpoint)),
+            new dns.ResourceRecord(name, dns.Type.TXT, dns.DClass.IN, ttl,
+                dns.TXT.fromAttributes(record.metadata))
         ];
 
         let last = 0, current;
         while ((current = record.serviceType.indexOf(".", last)) >= 0) {
             const hostname = record.serviceType.substring(last) + "." + domain;
-            updates.push(new ddns.ResourceRecord(hostname, ddns.Type.PTR,
-                ddns.DClass.IN, ttl, new ddns.PTR(name)));
+            updates.push(new dns.ResourceRecord(hostname, dns.Type.PTR,
+                dns.DClass.IN, ttl, new dns.PTR(name)));
             last = current + 1;
         }
 
-        return this.resolver.send(ddns.Message.newUpdateBuilder()
+        return this.resolver.send(dns.Message.newUpdateBuilder()
             .zone(domain)
             .absent(name)
             .update(...updates)
@@ -252,7 +252,7 @@ class ServiceRecordDNSSD extends ServiceIdentifierDNSSD implements ServiceRecord
     public port: number;
     public metadata;
 
-    constructor(id: ServiceIdentifier, srvs: ddns.SRV[], txts: ddns.TXT[]) {
+    constructor(id: ServiceIdentifier, srvs: dns.SRV[], txts: dns.TXT[]) {
         super(id);
 
         const record = selectSRVFrom(srvs);
@@ -262,8 +262,8 @@ class ServiceRecordDNSSD extends ServiceIdentifierDNSSD implements ServiceRecord
             return Object.assign(attributes, txt.intoAttributes());
         }, {});
 
-        function selectSRVFrom(srv: ddns.SRV[]): ddns.SRV {
-            let minPriority = 65536, options: ddns.SRV[] = [];
+        function selectSRVFrom(srv: dns.SRV[]): dns.SRV {
+            let minPriority = 65536, options: dns.SRV[] = [];
             srv.forEach(record => {
                 if (minPriority > record.priority) {
                     minPriority = record.priority;
