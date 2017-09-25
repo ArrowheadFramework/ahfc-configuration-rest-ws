@@ -140,13 +140,12 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
             last = current + 1;
         }
 
-        return this.resolver.send(new ddns.Message(
-            ddns.Message.newID(),
-            { opcode: ddns.OpCode.UPDATE },
-            [new ddns.ResourceRecord(domain, ddns.Type.SOA, ddns.DClass.IN)],
-            [new ddns.ResourceRecord(name, ddns.Type.ANY, ddns.DClass.NONE)],
-            updates
-        )).then(response => undefined);
+        return this.resolver.send(ddns.Message.newUpdateBuilder()
+            .zone(domain)
+            .absent(name)
+            .update(...updates)
+            .build())
+            .then(response => undefined);
     }
 
     public unpublish(record: ServiceRecord): Promise<void> {

@@ -1,6 +1,7 @@
 import { DClass, OpCode, RCode, Type } from "./constants";
 import { Reader, Writer } from "./io";
 import { ResourceRecord } from "./ResourceRecord";
+import { TransactionSigner } from "./TransactionSigner";
 
 /**
  * An RFC 1035 message.
@@ -31,7 +32,8 @@ export class Message {
         public readonly questions: ResourceRecord[] = [],
         public readonly answers: ResourceRecord[] = [],
         public readonly authorities: ResourceRecord[] = [],
-        public readonly additionals: ResourceRecord[] = []
+        public readonly additionals: ResourceRecord[] = [],
+        public readonly transactionSigner?: TransactionSigner,
     ) { }
 
     /**
@@ -53,6 +55,13 @@ export class Message {
             { opcode: OpCode.QUERY, rd },
             [new ResourceRecord(hostname, type, dclass)]
         );
+    }
+
+    /**
+     * Creates new immutable builder useful for creating DNS UPDATE messages.
+     */
+    public static newUpdateBuilder(): UpdateBuilder {
+        return UpdateBuilder.empty();
     }
 
     /**
@@ -167,13 +176,145 @@ export class Message {
     }
 
     public toString(): string {
-        return "OPCODE=" + this.flags.opcode + "(" + OpCode[this.flags.opcode] + ")" +
+        return "OPCODE=" + this.flags.opcode +
+            "(" + OpCode[this.flags.opcode] + ")" +
             (this.flags.qr
-                ? (",RCODE=" + this.flags.rcode + "(" + RCode[this.flags.rcode] + ")")
+                ? (",RCODE=" + this.flags.rcode +
+                    "(" + RCode[this.flags.rcode] + ")")
                 : "") + "," +
-                "QD=" + this.questions.length + "," +
-                "AN=" + this.answers.length + "," +
-                "NS=" + this.authorities.length + "," +
-                "AR=" + this.additionals.length;
+            "QD=" + this.questions.length + "," +
+            "AN=" + this.answers.length + "," +
+            "NS=" + this.authorities.length + "," +
+            "AR=" + this.additionals.length;
+    }
+}
+
+/**
+ * Immutable builder class useful for creating DNS UPDATE messages, as
+ * described by RFC 2136.
+ */
+export class UpdateBuilder {
+    private constructor(
+        private readonly _id?: number,
+        private readonly _flags?: {
+            qr?: boolean,
+        },
+        private readonly _questions?: ResourceRecord[],
+        private readonly _answers?: ResourceRecord[],
+        private readonly _authorities?: ResourceRecord[],
+        private readonly _additionals?: ResourceRecord[],
+        private readonly _transactionSigner?: TransactionSigner,
+    ) { }
+
+    /**
+     * @return New empty builder.
+     */
+    public static empty(): UpdateBuilder {
+        return new UpdateBuilder();
+    }
+
+    /**
+     * @param id Target message ID. If no ID is given a suitable default is
+     * provided automatically.
+     * @return This builder.
+     */
+    public id(id: number): UpdateBuilder {
+        return new UpdateBuilder(id, this._flags, this._questions,
+            this._answers, this._authorities, this._additionals,
+            this._transactionSigner);
+    }
+
+    /**
+     * @param flags Target message flags.
+     * @return This builder.
+     */
+    public flags(flags: { qr?: boolean }): UpdateBuilder {
+        return new UpdateBuilder(this._id, flags, this._questions,
+            this._answers, this._authorities, this._additionals,
+            this._transactionSigner);
+    }
+
+    /**
+     * @param zone Zone target of update.
+     * @return This builder.
+     */
+    public zone(zone: string): UpdateBuilder {
+        return new UpdateBuilder(this._id, this._flags,
+            [new ResourceRecord(zone, Type.SOA, DClass.IN)],
+            this._answers, this._authorities, this._additionals,
+            this._transactionSigner);
+    }
+
+    /**
+     * Requires that a record with given name and type is absent for update to
+     * succeed.
+     *
+     * @param name Record name.
+     * @param type Record type.
+     * @return This builder.
+     */
+    public absent(name: string, type = Type.ANY): UpdateBuilder {
+        return new UpdateBuilder(this._id, this._flags, this._questions,
+            (this._answers || [])
+                .concat(new ResourceRecord(name, type, DClass.NONE)),
+            this._authorities, this._additionals, this._transactionSigner);
+    }
+
+    /**
+     * Requires that a record with given name and type is present for update to
+     * succeed.
+     *
+     * @param name Record name.
+     * @param type Record type.
+     * @return This builder.
+     */
+    public present(name: string, type = Type.ANY): UpdateBuilder {
+        return new UpdateBuilder(this._id, this._flags, this._questions,
+            (this._answers || [])
+                .concat(new ResourceRecord(name, type, DClass.ANY)),
+            this._authorities, this._additionals, this._transactionSigner);
+    }
+
+    /**
+     * @param records Changes to make to DNS registry.
+     * @return This builder.
+     */
+    public update(...records: ResourceRecord[]): UpdateBuilder {
+        return new UpdateBuilder(this._id, this._flags, this._questions,
+            this._answers, (this._authorities || []).concat(records),
+            this._additionals, this._transactionSigner);
+    }
+
+    /**
+     * @param records Additional records.
+     * @return This builder.
+     */
+    public additionals(...records: ResourceRecord[]): UpdateBuilder {
+        return new UpdateBuilder(this._id, this._flags, this._questions,
+            this._answers, this._authorities, (this._additionals || [])
+                .concat(records), this._transactionSigner);
+    }
+
+    /**
+     * @param transactionSigner Object used for signing update message.
+     * @return This builder.
+     */
+    public sign(transactionSigner: TransactionSigner): UpdateBuilder {
+        return new UpdateBuilder(this._id, this._flags, this._questions,
+            this._answers, this._authorities, this._additionals,
+            transactionSigner);
+    }
+
+    /**
+     * Finalizes construction of DNS UPDATE message.
+     *
+     * @return New message.
+     */
+    public build(): Message {
+        return new Message(
+            this._id || Message.newID(),
+            { qr: this._flags.qr, opcode: OpCode.UPDATE },
+            this._questions, this._answers, this._authorities,
+            this._additionals, this._transactionSigner);
     }
 }
