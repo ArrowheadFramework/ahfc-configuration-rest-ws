@@ -30,11 +30,11 @@ export enum RCode {
     NXDOMAIN = 3,
     NOTIMP = 4,
     REFUSED = 5,
-    YXDOMAIN = 6,
-    YXRRSET = 7,
-    NXRRSET = 8,
-    NOTAUTH = 9,
-    NOTZONE = 10,
+    YXDOMAIN = 6, // Added by RFC 2136.
+    YXRRSET = 7, // Added by RFC 2136.
+    NXRRSET = 8, // Added by RFC 2136.
+    NOTAUTH = 9, // Added by RFC 2136.
+    NOTZONE = 10, // Added by RFC 2136.
     BADSIG = 16, // Added by RFC 2845.
     BADKEY = 17, // Added by RFC 2845.
     BADTIME = 18, // Added by RFC 2845.
