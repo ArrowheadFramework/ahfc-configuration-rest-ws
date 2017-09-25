@@ -49,11 +49,9 @@ export class TransactionSigner {
      */
     public sign(messageID: number, messageBuffer: Buffer): ResourceRecord {
         const timestamp = new Date().getTime() / 1000;
+        const sslName = algorithmNameToSSLName(this.algorithmName);
+        const mac = crypto.createHmac(sslName, this.key);
 
-        const mac = crypto.createHmac(
-            algorithmNameToSSLName(this.algorithmName),
-            this.key
-        );
         mac.update(messageBuffer);
 
         const writer = new Writer(Buffer.alloc(22 + this.keyName.length +
@@ -76,11 +74,11 @@ export class TransactionSigner {
                 messageID, 0, Buffer.alloc(0)));
 
         function algorithmNameToSSLName(algorithmName: string): string {
-            algorithmName = algorithmName.toUpperCase();
-            if (algorithmName === "HMAC-MD5.SIG-ALG.REG.INT") {
+            const algorithmNameUpper = algorithmName.toUpperCase();
+            if (algorithmNameUpper === "HMAC-MD5.SIG-ALG.REG.INT") {
                 return "MD5";
             }
-            if (algorithmName.startsWith("HMAC-")) {
+            if (algorithmNameUpper.startsWith("HMAC-")) {
                 return algorithmName.substring(5);
             }
             return algorithmName;
