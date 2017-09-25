@@ -137,15 +137,6 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
                         ttl, dns.TXT.fromAttributes(record.metadata))
                 ];
 
-                let last = 0, current;
-                while ((current = record.serviceType.indexOf(".", last)) >= 0) {
-                    const hostname = record.serviceType.substring(last) + "." +
-                        domain;
-                    updates.push(new dns.ResourceRecord(hostname, dns.Type.PTR,
-                        dns.DClass.IN, ttl, new dns.PTR(name)));
-                    last = current + 1;
-                }
-
                 return dns.Message.newUpdateBuilder()
                     .zone(domain)
                     .absent(name)
@@ -158,7 +149,28 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
     }
 
     public unpublish(record: ServiceRecord): Promise<void> {
-        throw new Error("Method not implemented.");
+        return this.registrationDomains()
+        .then(domains => domains.map(domain => {
+            const services = "_services._dns-sd._udp." + domain;
+            const type = record.serviceType + "." + domain;
+            const name = record.serviceName + "." + type;
+
+            const updates = [
+                new dns.ResourceRecord(services, dns.Type.PTR, dns.DClass.NONE),
+                new dns.ResourceRecord(type, dns.Type.PTR, dns.DClass.NONE),
+                new dns.ResourceRecord(name, dns.Type.SRV, dns.DClass.NONE),
+                new dns.ResourceRecord(name, dns.Type.TXT, dns.DClass.NONE)
+            ];
+
+            return dns.Message.newUpdateBuilder()
+                .zone(domain)
+                .absent(name)
+                .update(...updates)
+                .sign(this.transactionSigner)
+                .build();
+        }))
+        .then(updates => this.resolver.sendAll(updates))
+        .then(respones => undefined);
     }
 }
 
