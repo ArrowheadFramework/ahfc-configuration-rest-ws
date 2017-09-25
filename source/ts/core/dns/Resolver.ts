@@ -1,5 +1,6 @@
 import { DClass, OpCode, RCode, Type } from "./constants";
 import * as dns from "dns";
+import { Errors } from "../error";
 import { Message } from "./Message";
 import * as net from "net";
 import { ResolverSocket } from "./ResolverSocket";
@@ -185,7 +186,7 @@ export class Resolver {
                     return;
                 }
                 if (successes === 0) {
-                    reject(new ResolverErrors(results as Error[]));
+                    reject(new Errors(results as Error[]));
                 } else {
                     resolve(results);
                 }
@@ -269,21 +270,4 @@ export enum ResolverErrorKind {
      * the `response` field of any associated `ResolverError` for more details.
      */
     ResponseNotExpected,
-}
-
-/**
- * Holds multiple `Resolver` `Error`s.
- */
-export class ResolverErrors extends Error {
-    /**
-     * Creates new error object.
-     * 
-     * @param errors Wrapped errors.
-     */
-    public constructor(
-        public readonly errors: Error[] = []
-    ) {
-        super(errors.length === 1 ? errors[0].message : "DNS errors");
-        this.name = (this as any).constructor.name;
-    }
 }

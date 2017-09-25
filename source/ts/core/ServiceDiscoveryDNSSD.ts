@@ -13,6 +13,7 @@ import {
  */
 export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
     private readonly resolver: dns.Resolver;
+    private readonly transactionSigner: dns.TransactionSigner;
 
     private readonly browsingDomains: () => Promise<string[]>;
     private readonly registrationDomains: () => Promise<string[]>;
@@ -25,6 +26,7 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
      */
     public constructor(configuration: ServiceDiscoveryDNSSDConfiguration = {}) {
         this.resolver = new dns.Resolver(configuration.nameServerAddresses);
+        this.transactionSigner = configuration.transactionSigner;
 
         if (configuration.browsingDomains) {
             const domains = configuration.browsingDomains.slice();
@@ -111,41 +113,43 @@ export class ServiceDiscoveryDNSSD implements ServiceDiscovery {
     }
 
     public publish(record: ServiceRecord): Promise<void> {
-        // TODO: Registration domains? What?
-        // TODO: TSIG?
+        return this.registrationDomains()
+            .then(domains => domains.map(domain => {
+                const services = "_services._dns-sd._udp." + domain;
+                const type = record.serviceType + "." + domain;
+                const name = record.serviceName + "." + type;
 
-        const domain = record.hostname;
-        const services = "_services._dns-sd._udp." + domain;
-        const type = record.serviceType + "." + domain;
-        const name = record.serviceName + "." + type;
+                const ttl = 3600; // TODO: How should this be chosen?
 
-        const ttl = 3600; // TODO: What? How long?
+                const updates = [
+                    new dns.ResourceRecord(services, dns.Type.PTR,
+                        dns.DClass.IN, ttl, new dns.PTR(type)),
+                    new dns.ResourceRecord(type, dns.Type.PTR,
+                        dns.DClass.IN, ttl, new dns.PTR(name)),
+                    new dns.ResourceRecord(name, dns.Type.SRV, dns.DClass.IN,
+                        ttl, new dns.SRV(0, 0, record.port, record.endpoint)),
+                    new dns.ResourceRecord(name, dns.Type.TXT, dns.DClass.IN,
+                        ttl, dns.TXT.fromAttributes(record.metadata))
+                ];
 
-        const updates = [
-            new dns.ResourceRecord(services, dns.Type.PTR, dns.DClass.IN,
-                ttl, new dns.PTR(type)),
-            new dns.ResourceRecord(type, dns.Type.PTR, dns.DClass.IN, ttl,
-                new dns.PTR(name)),
-            new dns.ResourceRecord(name, dns.Type.SRV, dns.DClass.IN, ttl,
-                new dns.SRV(0, 0, record.port, record.endpoint)),
-            new dns.ResourceRecord(name, dns.Type.TXT, dns.DClass.IN, ttl,
-                dns.TXT.fromAttributes(record.metadata))
-        ];
+                let last = 0, current;
+                while ((current = record.serviceType.indexOf(".", last)) >= 0) {
+                    const hostname = record.serviceType.substring(last) + "." +
+                        domain;
+                    updates.push(new dns.ResourceRecord(hostname, dns.Type.PTR,
+                        dns.DClass.IN, ttl, new dns.PTR(name)));
+                    last = current + 1;
+                }
 
-        let last = 0, current;
-        while ((current = record.serviceType.indexOf(".", last)) >= 0) {
-            const hostname = record.serviceType.substring(last) + "." + domain;
-            updates.push(new dns.ResourceRecord(hostname, dns.Type.PTR,
-                dns.DClass.IN, ttl, new dns.PTR(name)));
-            last = current + 1;
-        }
-
-        return this.resolver.send(dns.Message.newUpdateBuilder()
-            .zone(domain)
-            .absent(name)
-            .update(...updates)
-            .build())
-            .then(response => undefined);
+                return dns.Message.newUpdateBuilder()
+                    .zone(domain)
+                    .absent(name)
+                    .update(...updates)
+                    .sign(this.transactionSigner)
+                    .build();
+            }))
+            .then(updates => this.resolver.sendAll(updates))
+            .then(respones => undefined);
     }
 
     public unpublish(record: ServiceRecord): Promise<void> {
@@ -190,6 +194,14 @@ export interface ServiceDiscoveryDNSSDConfiguration {
      * If not given, any DNS servers provided by the system will be used.
      */
     nameServerAddresses?: string[];
+
+    /**
+     * Object used to sign DNS update requests.
+     *
+     * If not given, or if an object with invalid credentials is given, no
+     * service publish or unpublish operations will succeed.
+     */
+    transactionSigner?: dns.TransactionSigner;
 }
 
 class ServiceTypeDNSSD implements ServiceType {

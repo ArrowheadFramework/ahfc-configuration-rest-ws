@@ -1,4 +1,4 @@
-import { RCode } from "./constants";
+import { OpCode, RCode } from "./constants";
 import * as dgram from "dgram";
 import { Reader, Writer } from "./io";
 import { Message } from "./Message";
@@ -16,8 +16,8 @@ import { ResolverError, ResolverErrorKind } from "./Resolver";
 export class ResolverSocket {
     public readonly options: ResolverSocketOptions;
 
-    private readonly tcpSocket: ResolverSocketTCP;
-    private readonly udpSocket: ResolverSocketUDP;
+    private readonly socketTCP: ResolverSocketTCP;
+    private readonly socketUDP: ResolverSocketUDP;
 
     private readonly timeoutTimer: NodeJS.Timer;
 
@@ -44,25 +44,25 @@ export class ResolverSocket {
             const kind = error instanceof ResolverError
                 ? error.kind
                 : ResolverErrorKind.Other;
-            this.tcpSocket.rejectAllTasksWith(kind, error);
-            this.udpSocket.rejectAllTasksWith(kind, error);
+            this.socketTCP.rejectAllTasksWith(kind, error);
+            this.socketUDP.rejectAllTasksWith(kind, error);
         };
         const onTimeout = () => {
-            this.tcpSocket.rejectAllTasksWith(
+            this.socketTCP.rejectAllTasksWith(
                 ResolverErrorKind.RequestUnanswered
             );
         };
-        this.tcpSocket = new ResolverSocketTCP(
+        this.socketTCP = new ResolverSocketTCP(
             onError,
             onTimeout,
             this.options
         );
-        this.udpSocket = new ResolverSocketUDP(onError, this.options);
+        this.socketUDP = new ResolverSocketUDP(onError, this.options);
 
         this.timeoutTimer = setInterval(() => {
             const timestamp = new Date().getTime();
-            this.tcpSocket.retryOrTimeoutInboundsOlderThan(timestamp);
-            this.udpSocket.retryOrTimeoutInboundsOlderThan(timestamp);
+            this.socketTCP.retryOrTimeoutInboundsOlderThan(timestamp);
+            this.socketUDP.retryOrTimeoutInboundsOlderThan(timestamp);
         }, this.options.timeoutInMs / 20);
         this.timeoutTimer.unref();
     }
@@ -83,11 +83,11 @@ export class ResolverSocket {
                 return;
             }
             const task = new ResolverSocketTask(request, resolve, reject);
-            if (requestLength <= 512) {
+            if (requestLength < 513 && request.flags.opcode !== OpCode.UPDATE) {
                 task.retriesLeft = 2;
-                this.udpSocket.enqueue(task);
+                this.socketUDP.enqueue(task);
             } else {
-                this.tcpSocket.enqueue(task);
+                this.socketTCP.enqueue(task);
             }
         });
     }
@@ -97,8 +97,8 @@ export class ResolverSocket {
      */
     public close() {
         clearInterval(this.timeoutTimer);
-        this.tcpSocket.close();
-        this.udpSocket.close();
+        this.socketTCP.close();
+        this.socketUDP.close();
     }
 }
 
@@ -361,11 +361,27 @@ class ResolverSocketTCP extends ResolverSocketTransport<net.Socket> {
     }
 
     protected send(socket: net.Socket, request: Message) {
-        const length = request.length();
+        const lengthBase = request.length();
+        const lengthTSIG = (request.transactionSigner
+            ? request.transactionSigner.length() : 0);
+        const length = lengthBase + lengthTSIG;
+ 
         const buffer = Buffer.alloc(2 + length);
-        buffer.writeUInt16BE(length, 0);
-        request.write(buffer.slice(2));
 
+        // Write full message length. See RFC 1035 section 4.2.2.
+        buffer.writeUInt16BE(length, 0);
+
+        const requestBuffer = buffer.slice(2);
+        request.write(requestBuffer);
+
+        if (lengthTSIG > 0) {
+            // Increment ARCOUNT. See RFC 2845 section 3.4.1.
+            buffer.writeUInt16BE(request.additionals.length + 1, 10);
+
+            request.transactionSigner
+                .sign(request.id, requestBuffer.slice(0, lengthBase))
+                .write(new Writer(requestBuffer.slice(lengthBase)));
+        }
         socket.write(buffer);
     }
 

@@ -38,7 +38,7 @@ export function read(type: number, rdlength: number, reader: Reader) {
         case Type.SRV: rdread = SRV.read; break;
         case Type.TSIG: rdread = TSIG.read; break;
         default:
-            return new ANY(reader.read(rdlength).toString("binary"));
+            return new ANY(reader.read(rdlength));
     }
     return rdread(reader, rdlength);
 }
@@ -95,18 +95,21 @@ export class AAAA implements ResourceData {
     }
 }
 
+/**
+ * Holds any kind of resource data. 
+ */
 export class ANY implements ResourceData {
     public readonly rdlength: number;
 
     /**
      * @param rdata Arbitrary resource data.
      */
-    public constructor(public readonly rdata: string) {
+    public constructor(public readonly rdata: Buffer) {
         this.rdlength = rdata.length;
     }
 
     public write(writer: Writer) {
-        writer.write(Buffer.from(this.rdata, "binary"));
+        writer.write(this.rdata);
     }
 }
 
