@@ -1,5 +1,5 @@
 {
-  "name": "ahf-configuration-system",
+  "name": "ahfc-configuration-system-rest-ws",
   "version": "0.1.0",
   "description": "",
   "engines": {
@@ -18,10 +18,10 @@
     "typescript": "^2.5.3"
   },
   "dependencies": {
-    "ahf-core": "^0.2.2"
+    "ahfc-client": "^0.2.3"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ArrowheadFramework/ahf-configuration-rest-ws.git"
+    "url": "https://github.com/ArrowheadFramework/ahfc-configuration-rest-ws.git"
   }
 }
