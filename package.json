@@ -9,7 +9,8 @@
     "build": "tsc",
     "postinstall": "npm run build",
     "start": "node target/main/main.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "pretest": "npm run build",
+    "test": "node target/test/main.js"
   },
   "author": "Emanuel Palm <emanuel.palm@ltu.se>",
   "license": "MIT",

@@ -1,4 +1,4 @@
-import * as ahfc from "ahf-core";
+import * as ahfc from "ahfc-client";
 
 let serviceDiscovery = new ahfc.ServiceDiscoveryDNSSD({
     hostnames: ["arrowhead.eu"], // Name server hostname.
