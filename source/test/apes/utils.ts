@@ -50,10 +50,15 @@ class BufferStream extends stream.Writable {
 
     public _write(chunk: Buffer, encoding: string, callback: Function): void {
         if (this.cursor + chunk.length > this.buffer.length) {
-            const newLength = Math.max(
-                align4096(this.cursor + chunk.length),
+            let newLength = Math.max(
+                this.cursor + chunk.length,
                 this.buffer.length + this.buffer.length / 2
             );
+            if (newLength < 4096) {
+                newLength = align64(newLength);
+            } else {
+                newLength = align4096(newLength);
+            }
             const newBuffer = Buffer.alloc(newLength);
             this.buffer.copy(newBuffer, 0, 0, this.cursor);
             this.buffer = newBuffer;
@@ -61,6 +66,10 @@ class BufferStream extends stream.Writable {
         this.cursor += chunk.copy(this.buffer, this.cursor);
         callback();
     };
+}
+
+function align64(x: number) {
+    return (x + 64 - 1) & -64;
 }
 
 function align4096(x: number) {
