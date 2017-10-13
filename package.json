@@ -15,7 +15,7 @@
   "author": "Emanuel Palm <emanuel.palm@ltu.se>",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "6.*",
+    "@types/node": "^6.0.89",
     "typescript": "^2.5.3"
   },
   "dependencies": {
