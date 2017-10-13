@@ -11,7 +11,7 @@ export const TestWriterAnnotatedXML: unit.Suite = {
     name: "WriterAnnotatedXML",
     units: [
         {
-            name: "Write Map with Null",
+            name: "Write Map of Null",
             test: recorder => writeAndCompare(writer => writer
                 .writeMap(writer => writer
                     .addNull("a")),
@@ -20,7 +20,7 @@ export const TestWriterAnnotatedXML: unit.Suite = {
                 '</root>'),
         },
         {
-            name: "Write Map with Booleans",
+            name: "Write Map of Booleans",
             test: recorder => writeAndCompare(writer => writer
                 .writeMap(writer => writer
                     .addBoolean("a", true)
@@ -31,7 +31,7 @@ export const TestWriterAnnotatedXML: unit.Suite = {
                 '</root>'),
         },
         {
-            name: "Write Map with Numbers",
+            name: "Write Map of Numbers",
             test: recorder => writeAndCompare(writer => writer
                 .writeMap(writer => writer
                     .addNumber("A", 1)
@@ -44,7 +44,7 @@ export const TestWriterAnnotatedXML: unit.Suite = {
                 '</root>'),
         },
         {
-            name: "Write Map with Texts",
+            name: "Write Map of Texts",
             test: recorder => writeAndCompare(writer => writer
                 .writeMap(writer => writer
                     .addText("alpha", "Hello")
@@ -55,7 +55,7 @@ export const TestWriterAnnotatedXML: unit.Suite = {
                 '</root>'),
         },
         {
-            name: "Write Map with Lists",
+            name: "Write Map of Lists",
             test: recorder => writeAndCompare(writer => writer
                 .writeMap(writer => writer
                     .addList("a", writer => writer
@@ -76,7 +76,7 @@ export const TestWriterAnnotatedXML: unit.Suite = {
                 '</root>'),
         },
         {
-            name: "Write Map with Maps",
+            name: "Write Map of Maps",
             test: recorder => writeAndCompare(writer => writer
                 .writeMap(writer => writer
                     .addMap("a", writer => writer
@@ -97,7 +97,7 @@ export const TestWriterAnnotatedXML: unit.Suite = {
                 '</root>'),
         },
         {
-            name: "Write List with Nulls",
+            name: "Write List of Nulls",
             test: recorder => writeAndCompare(writer => writer
                 .writeList(writer => writer
                     .addNull()
@@ -110,7 +110,7 @@ export const TestWriterAnnotatedXML: unit.Suite = {
                 '</root>'),
         },
         {
-            name: "Write List with Booleans",
+            name: "Write List of Booleans",
             test: recorder => writeAndCompare(writer => writer
                 .writeList(writer => writer
                     .addBoolean(false)
@@ -121,7 +121,7 @@ export const TestWriterAnnotatedXML: unit.Suite = {
                 '</root>'),
         },
         {
-            name: "Write List with Number",
+            name: "Write List of Number",
             test: recorder => writeAndCompare(writer => writer
                 .writeList(writer => writer
                     .addNumber(1.234e+56)),
@@ -130,7 +130,7 @@ export const TestWriterAnnotatedXML: unit.Suite = {
                 '</root>'),
         },
         {
-            name: "Write List with Texts",
+            name: "Write List of Texts",
             test: recorder => writeAndCompare(writer => writer
                 .writeList(writer => writer
                     .addText("Hello")
@@ -141,7 +141,7 @@ export const TestWriterAnnotatedXML: unit.Suite = {
                 '</root>'),
         },
         {
-            name: "Write List with Lists",
+            name: "Write List of Lists",
             test: recorder => writeAndCompare(writer => writer
                 .writeList(writer => writer
                     .addList(writer => writer
@@ -162,7 +162,7 @@ export const TestWriterAnnotatedXML: unit.Suite = {
                 '</root>'),
         },
         {
-            name: "Write List with Maps",
+            name: "Write List of Maps",
             test: recorder => writeAndCompare(writer => writer
                 .writeList(writer => writer
                     .addMap(writer => writer

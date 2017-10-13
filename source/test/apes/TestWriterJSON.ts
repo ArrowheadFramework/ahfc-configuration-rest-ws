@@ -10,14 +10,14 @@ export const TestWriterJSON: unit.Suite = {
     name: "WriterJSON",
     units: [
         {
-            name: "Write Map with Null",
+            name: "Write Map of Null",
             test: recorder => writeAndCompare(writer => writer
                 .writeMap(writer => writer
                     .addNull("a")),
                 '{"a":null}'),
         },
         {
-            name: "Write Map with Booleans",
+            name: "Write Map of Booleans",
             test: recorder => writeAndCompare(writer => writer
                 .writeMap(writer => writer
                     .addBoolean("a", true)
@@ -25,7 +25,7 @@ export const TestWriterJSON: unit.Suite = {
                 '{"a":true,"b":false}'),
         },
         {
-            name: "Write Map with Numbers",
+            name: "Write Map of Numbers",
             test: recorder => writeAndCompare(writer => writer
                 .writeMap(writer => writer
                     .addNumber("A", 1)
@@ -34,7 +34,7 @@ export const TestWriterJSON: unit.Suite = {
                 '{"A":1,"B":12,"C":123}'),
         },
         {
-            name: "Write Map with Texts",
+            name: "Write Map of Texts",
             test: recorder => writeAndCompare(writer => writer
                 .writeMap(writer => writer
                     .addText("alpha", "Hello")
@@ -42,7 +42,7 @@ export const TestWriterJSON: unit.Suite = {
                 '{"alpha":"Hello","beta":"World!"}'),
         },
         {
-            name: "Write Map with Lists",
+            name: "Write Map of Lists",
             test: recorder => writeAndCompare(writer => writer
                 .writeMap(writer => writer
                     .addList("a", writer => writer
@@ -54,7 +54,7 @@ export const TestWriterJSON: unit.Suite = {
                 '{"a":[null,null],"b":[1,false]}'),
         },
         {
-            name: "Write Map with Maps",
+            name: "Write Map of Maps",
             test: recorder => writeAndCompare(writer => writer
                 .writeMap(writer => writer
                     .addMap("a", writer => writer
@@ -66,7 +66,7 @@ export const TestWriterJSON: unit.Suite = {
                 '{"a":{"a0":null,"a1":null},"b":{"b0":1,"b1":false}}'),
         },
         {
-            name: "Write List with Nulls",
+            name: "Write List of Nulls",
             test: recorder => writeAndCompare(writer => writer
                 .writeList(writer => writer
                     .addNull()
@@ -75,7 +75,7 @@ export const TestWriterJSON: unit.Suite = {
                 '[null,null,null]'),
         },
         {
-            name: "Write List with Booleans",
+            name: "Write List of Booleans",
             test: recorder => writeAndCompare(writer => writer
                 .writeList(writer => writer
                     .addBoolean(false)
@@ -83,14 +83,14 @@ export const TestWriterJSON: unit.Suite = {
                 '[false,true]'),
         },
         {
-            name: "Write List with Number",
+            name: "Write List of Number",
             test: recorder => writeAndCompare(writer => writer
                 .writeList(writer => writer
                     .addNumber(1234)),
                 '[1234]'),
         },
         {
-            name: "Write List with Texts",
+            name: "Write List of Texts",
             test: recorder => writeAndCompare(writer => writer
                 .writeList(writer => writer
                     .addText("Hello")
@@ -98,7 +98,7 @@ export const TestWriterJSON: unit.Suite = {
                 '["Hello","World!"]'),
         },
         {
-            name: "Write List with Lists",
+            name: "Write List of Lists",
             test: recorder => writeAndCompare(writer => writer
                 .writeList(writer => writer
                     .addList(writer => writer
@@ -110,7 +110,7 @@ export const TestWriterJSON: unit.Suite = {
                 '[[null,null],[1,false]]'),
         },
         {
-            name: "Write List with Maps",
+            name: "Write List of Maps",
             test: recorder => writeAndCompare(writer => writer
                 .writeList(writer => writer
                     .addMap(writer => writer
