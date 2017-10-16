@@ -36,10 +36,12 @@ export class WriterAnnotatedXML implements Writer {
     }
 }
 
-class WriterListAnnotatedXML implements WriterList {
+class WriterListAnnotatedXML extends WriterList {
     public constructor(
         private readonly sink: stream.Writable,
-    ) { }
+    ) {
+        super();
+    }
 
     public addNull(): this {
         return this.writeItem("Null", "null");
@@ -90,12 +92,14 @@ class WriterListAnnotatedXML implements WriterList {
     }
 }
 
-class WriterMapAnnotatedXML implements WriterMap {
+class WriterMapAnnotatedXML extends WriterMap {
     private counter = 0;
 
     public constructor(
         private readonly sink: stream.Writable,
-    ) { }
+    ) {
+        super();
+    }
 
     public addNull(key: string): this {
         return this.writeEntry(key, "Null", "null");

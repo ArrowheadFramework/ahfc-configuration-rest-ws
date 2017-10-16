@@ -22,13 +22,61 @@ export interface Writer {
 /**
  * Represents an APES-compliant list encoder.
  */
-export interface WriterList {
+export abstract class WriterList {
+    /**
+     * Writes dynamic type to list.
+     *
+     * @param value Dynamic value to add.
+     * @return Self.
+     */
+    public add(value: any): this {
+        if (value === null) {
+            return this.addNull();
+        }
+        switch (typeof value) {
+            case "undefined":
+                return this.addNull();
+
+            case "boolean":
+                return this.addBoolean(value);
+
+            case "number":
+                return this.addNumber(value);
+
+            case "string":
+                return this.addText(value);
+
+            case "object":
+                break;
+
+            default:
+                throw new TypeError("Bad value type: " + value);
+        }
+        if (value instanceof Map) {
+            return this.addMap(writer => {
+                for (const entry of value.entries()) {
+                    writer.add("" + entry[0], entry[1]);
+                }
+            });
+        }
+        if (typeof value[Symbol.iterator] === "function") {
+            return this.addList(writer => {
+                for (const item of value) {
+                    writer.add(item);
+                }
+            });
+        }
+        return this.addMap(writer => Object
+            .getOwnPropertyNames(value)
+            .forEach(name => writer.add(name, value[name])));
+    }
+
     /**
      * Writes null to list.
      *
      * @return Self.
      */
-    addNull(): this;
+    public abstract addNull(): this;
 
     /**
      * Writes boolean to list.
@@ -36,7 +84,7 @@ export interface WriterList {
      * @param value Boolean to add.
      * @return Self.
      */
-    addBoolean(value: boolean): this;
+    public abstract addBoolean(value: boolean): this;
 
     /**
      * Writes number to list.
@@ -46,7 +94,7 @@ export interface WriterList {
      * @param value Number to add.
      * @return Self.
      */
-    addNumber(value: number): this;
+    public abstract addNumber(value: number): this;
 
     /**
      * Writes text to list.
@@ -54,7 +102,7 @@ export interface WriterList {
      * @param value Text to add.
      * @return Self.
      */
-    addText(value: string): this;
+    public abstract addText(value: string): this;
 
     /**
      * Writes list to list.
@@ -62,7 +110,7 @@ export interface WriterList {
      * @param f Consumer function receiving writer used to encode a list.
      * @return Self.
      */
-    addList(f: (writer: WriterList) => void): this;
+    public abstract addList(f: (writer: WriterList) => void): this;
 
     /**
      * Writes map to list.
@@ -70,7 +118,7 @@ export interface WriterList {
      * @param f Consumer function receiving writer used to encode a map.
      * @return Self.
      */
-    addMap(f: (writer: WriterMap) => void): this;
+    public abstract addMap(f: (writer: WriterMap) => void): this;
 
     /**
      * Writes arbitrary writable object to list.
@@ -78,20 +126,69 @@ export interface WriterList {
      * @param value Arbitrary writable to add.
      * @return Self.
      */
-    addWritable(value: Writable): this;
+    public abstract addWritable(value: Writable): this;
 }
 
 /**
  * Represents an APES-compliant map encoder.
  */
-export interface WriterMap {
+export abstract class WriterMap {
+    /**
+     * Writes dynamic type entry to map.
+     *
+     * @param key Map key.
+     * @param value Dynamic value to add.
+     * @return Self.
+     */
+    public add(key: string, value: any): this {
+        if (value === null) {
+            return this.addNull(key);
+        }
+        switch (typeof value) {
+            case "undefined":
+                return this.addNull(key);
+
+            case "boolean":
+                return this.addBoolean(key, value);
+
+            case "number":
+                return this.addNumber(key, value);
+
+            case "string":
+                return this.addText(key, value);
+
+            case "object":
+                break;
+
+            default:
+                throw new TypeError("Bad value type: " + value);
+        }
+        if (value instanceof Map) {
+            return this.addMap(key, writer => {
+                for (const entry of value.entries()) {
+                    writer.add("" + entry[0], entry[1]);
+                }
+            });
+        }
+        if (typeof value[Symbol.iterator] === "function") {
+            return this.addList(key, writer => {
+                for (const item of value) {
+                    writer.add(item);
+                }
+            });
+        }
+        return this.addMap(key, writer => Object
+            .getOwnPropertyNames(value)
+            .forEach(name => writer.add(name, value[name])));
+    }
+
     /**
      * Writes null entry to map.
      *
      * @param key Map key.
      * @return Self.
      */
-    addNull(key: string): this;
+    public abstract addNull(key: string): this;
 
     /**
      * Writes boolean entry to map.
@@ -100,7 +197,7 @@ export interface WriterMap {
      * @param value Boolean to add.
      * @return Self.
      */
-    addBoolean(key: string, value: boolean): this;
+    public abstract addBoolean(key: string, value: boolean): this;
 
     /**
      * Writes number entry to map.
@@ -111,7 +208,7 @@ export interface WriterMap {
      * @param value Number to add.
      * @return Self.
      */
-    addNumber(key: string, value: number): this;
+    public abstract addNumber(key: string, value: number): this;
 
     /**
      * Writes text entry to map.
@@ -120,7 +217,7 @@ export interface WriterMap {
      * @param value Text to add.
      * @return Self.
      */
-    addText(key: string, value: string): this;
+    public abstract addText(key: string, value: string): this;
 
     /**
      * Writes list entry to map.
@@ -129,7 +226,7 @@ export interface WriterMap {
      * @param f Consumer function receiving writer used to encode a list.
      * @return Self.
      */
-    addList(key: string, f: (writer: WriterList) => void): this;
+    public abstract addList(key: string, f: (writer: WriterList) => void): this;
 
     /**
      * Writes map entry to map.
@@ -138,7 +235,7 @@ export interface WriterMap {
      * @param f Consumer function receiving writer used to encode a map.
      * @return Self.
      */
-    addMap(key: string, f: (writer: WriterMap) => void): this;
+    public abstract addMap(key: string, f: (writer: WriterMap) => void): this;
 
     /**
      * Writes arbitrary writable object to map.
@@ -147,5 +244,5 @@ export interface WriterMap {
      * @param value Arbitrary writable to add.
      * @return Self.
      */
-    addWritable(key: string, value: Writable): this;
+    public abstract addWritable(key: string, value: Writable): this;
 }

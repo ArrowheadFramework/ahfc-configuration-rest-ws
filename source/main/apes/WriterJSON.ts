@@ -28,12 +28,14 @@ export class WriterJSON implements Writer {
     }
 }
 
-class WriterListJSON implements WriterList {
+class WriterListJSON extends WriterList {
     private counter = 0;
 
     public constructor(
         private readonly sink: stream.Writable,
-    ) { }
+    ) {
+        super();
+    }
 
     public addNull(): this {
         this.writeColon();
@@ -102,12 +104,14 @@ class WriterListJSON implements WriterList {
     }
 }
 
-class WriterMapJSON implements WriterMap {
+class WriterMapJSON extends WriterMap {
     private counter = 0;
 
     public constructor(
         private readonly sink: stream.Writable,
-    ) { }
+    ) {
+        super();
+    }
 
     public addNull(key: string): this {
         this.writeCommaKeyColon(key);

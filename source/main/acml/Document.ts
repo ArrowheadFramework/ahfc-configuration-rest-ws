@@ -21,6 +21,6 @@ export class Document implements apes.Writable {
         writer.writeMap(writer => writer
             .addText("TemplateName", this.template)
             .addText("DocumentName", this.name)
-            .addWritable("Body", this.body));
+            .add("Body", this.body));
     }
 }
