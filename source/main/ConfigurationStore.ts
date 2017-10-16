@@ -6,7 +6,7 @@ import * as db from "./db";
  */
 export class ConfigurationStore {
     public constructor(
-        private readonly database: db.Database,
+        private readonly database: db.Directory,
     ) { }
 
     /**
