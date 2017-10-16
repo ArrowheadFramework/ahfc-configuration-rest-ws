@@ -18,6 +18,12 @@ export class Document implements apes.Writable {
         public readonly body: object,
     ) { }
 
+    /**
+     * Attempts to create new document from given source object.
+     *
+     * @param source Object to build document from.
+     * @return New document.
+     */
     public static read(source: object): Document {
         return new Document(
             verify.isString(source["TemplateName"]),
