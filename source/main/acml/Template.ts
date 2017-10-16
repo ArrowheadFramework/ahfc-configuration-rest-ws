@@ -1,7 +1,8 @@
+import { Writable, Writer, WriterMap } from "../apes";
 import { Document } from "./Document";
 import { Report, Violation } from "./Report";
+import * as verify from "../util/verify";
 import * as vm from "vm";
-import { Writable, Writer, WriterMap } from "../apes";
 
 /**
  * A configuration template.
@@ -32,6 +33,19 @@ export class Template implements Writable {
     }
 
     /**
+     * Attempts to create new template from given source object.
+     *
+     * @param source Object to build template from.
+     * @return New template.
+     */
+    public static read(source: object): Template {
+        return new Template(
+            verify.isString(source["TemplateName"]),
+            TemplateField.read(verify.isObject(source["Body"]))
+        );
+    }
+
+    /**
      * Determines whether given document is sound in relation to this template.
      *
      * @param document Document to validate.
@@ -50,7 +64,7 @@ export class Template implements Writable {
         );
     }
 
-    write(writer: Writer) {
+    public write(writer: Writer) {
         writer.writeMap(writer => writer
             .addText("TemplateName", this.name)
             .addWritable("Body", this.body));
@@ -72,15 +86,57 @@ export type TemplateCondition = string;
  */
 export abstract class TemplateField implements Writable {
     /**
-     * Human and machine readable field identifier.
+     * @param name Human and machine readable field identifier.
+     * @param conditions Conditions that must be satisfied for a document
+     * instance of this field to be considered sound.
      */
-    public readonly name: string;
+    protected constructor(
+        public readonly name: string,
+        public readonly conditions?: TemplateCondition[],
+    ) { }
 
     /**
-     * Conditions that must be satisfied for a document instance of this field
-     * to be considered sound.
+     * Attempts to create new template field from given source object.
+     *
+     * @param source Object to build field from.
+     * @return New field.
      */
-    public readonly conditions?: TemplateCondition[];
+    public static read(source: object): TemplateField {
+        if (!source) {
+            return undefined;
+        }
+        verify.isObject(source);
+        let decoder;
+        switch (verify.isString(source["Type"])) {
+            case "Null":
+                decoder = TemplateFieldNull.read;
+                break;
+
+            case "Boolean":
+                decoder = TemplateFieldBoolean.read;
+                break;
+
+            case "Number":
+                decoder = TemplateFieldNumber.read;
+                break;
+
+            case "Text":
+                decoder = TemplateFieldText.read;
+                break;
+
+            case "List":
+                decoder = TemplateFieldList.read;
+                break;
+
+            case "Map":
+                decoder = TemplateFieldMap.read;
+                break;
+
+            default:
+                throw new TypeError("Bad template: " + JSON.stringify(source));
+        }
+        return decoder(source);
+    }
 
     /**
      * Validates given document entity.
@@ -123,7 +179,7 @@ export abstract class TemplateField implements Writable {
 
     protected abstract validateInner(path: string, entity: any): Violation[];
 
-    write(writer: Writer) {
+    public write(writer: Writer) {
         writer.writeMap(writer => {
             writer.addText("Name", this.name);
             this.writeInner(writer);
@@ -141,6 +197,29 @@ export abstract class TemplateField implements Writable {
  * A boolean template entity.
  */
 export class TemplateFieldNull extends TemplateField {
+    /**
+     * Creates new Null template field.
+     *
+     * @param name Field identifier.
+     * @param conditions Field conditions.
+     */
+    public constructor(name: string, conditions?: TemplateCondition[]) {
+        super(name, conditions);
+    }
+
+    /**
+     * Attempts to create new Null template field from given source object.
+     *
+     * @param source Object to build field from.
+     * @return New field.
+     */
+    public static read(source: object): TemplateFieldNull {
+        return new TemplateFieldNull(
+            verify.isString(source["Name"]),
+            verify.isArrayOrNothing(source["Conditions"])
+        );
+    }
+
     protected validateInner(path: string, entity: any): Violation[] {
         return entity !== null
             ? [{ path, condition: "(x) => x !== null" }]
@@ -156,6 +235,29 @@ export class TemplateFieldNull extends TemplateField {
  * A boolean template entity.
  */
 export class TemplateFieldBoolean extends TemplateField {
+    /**
+     * Creates new Boolean template field.
+     *
+     * @param name Field identifier.
+     * @param conditions Field conditions.
+     */
+    public constructor(name: string, conditions?: TemplateCondition[]) {
+        super(name, conditions);
+    }
+
+    /**
+     * Attempts to create new Boolean template field from given source object.
+     *
+     * @param source Object to build field from.
+     * @return New field.
+     */
+    public static read(source: object): TemplateFieldBoolean {
+        return new TemplateFieldBoolean(
+            verify.isString(source["Name"]),
+            verify.isArrayOrNothing(source["Conditions"])
+        );
+    }
+
     protected validateInner(path: string, entity: any): Violation[] {
         return entity !== true && entity !== false
             ? [{ path, condition: "(x) => x !== true && x !== false" }]
@@ -171,6 +273,29 @@ export class TemplateFieldBoolean extends TemplateField {
  * A number template entity.
  */
 export class TemplateFieldNumber extends TemplateField {
+    /**
+     * Creates new Number template field.
+     *
+     * @param name Field identifier.
+     * @param conditions Field conditions.
+     */
+    public constructor(name: string, conditions?: TemplateCondition[]) {
+        super(name, conditions);
+    }
+
+    /**
+     * Attempts to create new Number template field from given source object.
+     *
+     * @param source Object to build field from.
+     * @return New field.
+     */
+    public static read(source: object): TemplateFieldNumber {
+        return new TemplateFieldNumber(
+            verify.isString(source["Name"]),
+            verify.isArrayOrNothing(source["Conditions"])
+        );
+    }
+
     protected validateInner(path: string, entity: any): Violation[] {
         return typeof entity !== "number"
             ? [{ path, condition: "(x) => typeof x !== 'number'" }]
@@ -186,6 +311,29 @@ export class TemplateFieldNumber extends TemplateField {
  * A UTF-8 string template entity.
  */
 export class TemplateFieldText extends TemplateField {
+    /**
+     * Creates new Text template field.
+     *
+     * @param name Field identifier.
+     * @param conditions Field conditions.
+     */
+    public constructor(name: string, conditions?: TemplateCondition[]) {
+        super(name, conditions);
+    }
+
+    /**
+     * Attempts to create new Text template field from given source object.
+     *
+     * @param source Object to build field from.
+     * @return New field.
+     */
+    public static read(source: object): TemplateFieldText {
+        return new TemplateFieldText(
+            verify.isString(source["Name"]),
+            verify.isArrayOrNothing(source["Conditions"])
+        );
+    }
+
     protected validateInner(path: string, entity: any): Violation[] {
         return typeof entity !== "string"
             ? [{ path, condition: "(x) => typeof x !== 'string'" }]
@@ -202,14 +350,38 @@ export class TemplateFieldText extends TemplateField {
  */
 export class TemplateFieldList extends TemplateField {
     /**
-     * Field template used to validate each list items.
+     * Creates new List template field.
+     *
+     * @param name Field identifier.
+     * @param conditions Field conditions.
+     * @param item Field template used to validate each list items.
+     * @param items Field templates used to validate list items at specific
+     * positions.
      */
-    public readonly item?: TemplateField;
+    public constructor(
+        name: string,
+        conditions?: TemplateCondition[],
+        public readonly item?: TemplateField,
+        public readonly items?: TemplateField[],
+    ) {
+        super(name, conditions);
+    }
 
     /**
-     * Field templates used to validate list items at specific positions.
+     * Attempts to create new List template field from given source object.
+     *
+     * @param source Object to build field from.
+     * @return New field.
      */
-    public readonly items?: TemplateField[];
+    public static read(source: object): TemplateFieldList {
+        return new TemplateFieldList(
+            verify.isString(source["Name"]),
+            verify.isArrayOrNothing(source["Conditions"]),
+            TemplateField.read(source["Item"]),
+            (verify.isArrayOrNothing(source["Items"]) || [])
+                .map(item => TemplateField.read(item)),
+        );
+    }
 
     protected validateInner(path: string, entity: any): Violation[] {
         if (!Array.isArray(entity)) {
@@ -247,14 +419,45 @@ export class TemplateFieldList extends TemplateField {
  */
 export class TemplateFieldMap extends TemplateField {
     /**
-     * Field template used to validate each map value.
+     * Creates new Map template field.
+     *
+     * @param name Field identifier.
+     * @param conditions Field conditions.
+     * @param entry Field template used to validate each map value.
+     * @param entries Field templates use to validate map values with specific
+     * keys.
      */
-    public readonly entry?: TemplateField;
+    public constructor(
+        name: string,
+        conditions?: TemplateCondition[],
+        public readonly entry?: TemplateField,
+        public readonly entries?: Iterable<[string, TemplateField]>,
+    ) {
+        super(name, conditions);
+    }
 
     /**
-     * Field templates use to validate map values with specific keys.
+     * Attempts to create new Map template field from given source object.
+     *
+     * @param source Object to build field from.
+     * @return New field.
      */
-    public readonly entries?: Iterable<[string, TemplateField]>;
+    public static read(source: object): TemplateFieldMap {
+        return new TemplateFieldMap(
+            verify.isString(source["Name"]),
+            verify.isArrayOrNothing(source["Conditions"]),
+            TemplateField.read(source["Entry"]),
+            (source["Entries"] || []).map(entry => {
+                if (
+                    typeof entry[Symbol.iterator] !== "function" ||
+                    typeof entry[0] !== "string"
+                ) {
+                    throw new TypeError("Bad entry: " + JSON.stringify(entry));
+                }
+                return [entry[0], TemplateField.read(entry[1])];
+            }),
+        );
+    }
 
     protected validateInner(path: string, entity: any): Violation[] {
         if (Array.isArray(entity) || typeof entity !== "object") {
