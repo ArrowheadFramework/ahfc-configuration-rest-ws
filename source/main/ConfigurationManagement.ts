@@ -3,7 +3,7 @@ import * as acml from "./acml";
 /**
  * An object useful for managing configuration data.
  */
-export interface ConfigurationManagement {
+export class ConfigurationManagement {
     /**
      * Adds given array of documents, if all added documents are sound.
      * 
@@ -15,7 +15,9 @@ export interface ConfigurationManagement {
      * array of documents. Reports are provided for all documents, even if they
      * are all sound.
      */
-    addDocuments(documents: acml.Document[]): Promise<acml.Report[]>;
+    addDocuments(documents: acml.Document[]): Promise<acml.Report[]> {
+        throw new Error("Not implemented");
+    }
 
     /**
      * Retrieves all known documents with names matching those given.
@@ -28,7 +30,9 @@ export interface ConfigurationManagement {
      * @param names An array of fully or partially qualified document names.
      * @return A list of documents.
      */
-    listDocuments(names: string[]): Promise<acml.Document[]>;
+    listDocuments(names: string[]): Promise<acml.Document[]> {
+        throw new Error("Not implemented");
+    }
 
     /**
      * Removes all known documents with names matching those given.
@@ -41,7 +45,9 @@ export interface ConfigurationManagement {
      * @param names An array of fully or partially qualified document names.
      * @return A promise resolved with nothing when the operation is completed.
      */
-    removeDocuments(names: string[]): Promise<void>;
+    removeDocuments(names: string[]): Promise<void> {
+        throw new Error("Not implemented");
+    }
 
     /**
      * Adds given array of templates.
@@ -52,7 +58,9 @@ export interface ConfigurationManagement {
      * @param documents Templates to add.
      * @return A promise resolved with nothing when the operation is completed.
      */
-    addTemplates(templates: acml.Template[]): Promise<void>;
+    addTemplates(templates: acml.Template[]): Promise<void> {
+        throw new Error("Not implemented");
+    }
 
     /**
      * Retrieves all known templates with names matching those given.
@@ -65,7 +73,9 @@ export interface ConfigurationManagement {
      * @param names An array of fully or partially qualified template names.
      * @return A list of templates.
      */
-    listTemplates(names: string[]): Promise<acml.Template[]>;
+    listTemplates(names: string[]): Promise<acml.Template[]> {
+        throw new Error("Not implemented");
+    }
 
     /**
      * Removes all known templates with names matching those given.
@@ -78,5 +88,7 @@ export interface ConfigurationManagement {
      * @param names An array of fully or partially qualified template names.
      * @return A promise resolved with nothing when the operation is completed.
      */
-    removeTemplates(names: string[]): Promise<void>;
+    removeTemplates(names: string[]): Promise<void> {
+        throw new Error("Not implemented");
+    }
 }
