@@ -52,7 +52,7 @@ export interface ConfigurationManagement {
      * @param rules Rules to add.
      * @return A promise resolved with nothing when the operation is completed.
      */
-    addRules(rules: acml.Rule): Promise<void>;
+    addRules(rules: acml.Rule[]): Promise<void>;
 
     /**
      * Retrieves all known rules with names matching those given.
