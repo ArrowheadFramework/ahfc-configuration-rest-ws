@@ -114,7 +114,7 @@ function visitEachMatch(paths: string[], cursor: lmdb.Cursor, f: () => void) {
         }
         let key: string = cursor.goToRange(path);
         if (path.endsWith(".")) {
-            while (key.startsWith(path)) {
+            while (key && key.startsWith(path)) {
                 f();
                 key = cursor.goToNext();
             }
