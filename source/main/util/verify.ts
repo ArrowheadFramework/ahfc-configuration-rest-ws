@@ -15,6 +15,22 @@ export function isArrayOrNothing(value: any, message?: string): any[] {
 }
 
 /**
+ * Verifies that given value is a number.
+ *
+ * A TypeError is thrown if verification fails.
+ *
+ * @param value Value to verify.
+ * @param message Verification failure message.
+ * @return Given value, unless verification fails.
+ */
+export function isNumber(value: any, message?: string): number {
+    if (typeof value === "number") {
+        return value;
+    }
+    throw new TypeError(message || "Not a number: " + value);
+}
+
+/**
  * Verifies that given value is an object.
  *
  * A TypeError is thrown if verification fails.
