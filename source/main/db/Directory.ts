@@ -2,17 +2,25 @@
  * A database useful for storing arbitrary data in a manner similar to that of
  * a regular filesystem.
  *
- * Each data entry has an associated path, which identifies any folders the
- * entry is part of, as well as its name. Path segments are delimited by ASCII
- * dot. The leftmost segment of a path identifies a folder or entry in the
- * implicit root folder.
+ * The directory contains two kinds of entires, files and folders. Files have
+ * associated data, are created explicitly, and are referred to via fully
+ * qualified paths. Folders may contain other folders and files, are created
+ * implicitly, and are referred to via partially qualified paths.
+ *
+ * Each path is constituted by segments delimited by ASCII dots. The leftmost
+ * segment is considered a child of the implicit root folder, and each
+ * following segment is considered a child of the preceding segment. A path is
+ * considered partially qualified, i.e. referring to a folder, if it ends with
+ * a trailing ASCII dot. In any other case the path is considered fully
+ * qualified.
  */
 export interface Directory {
     /**
      * Adds given array of entries.
      *
      * If an added entry has a path equal to any existing entry, the existing
-     * entry is replaced.
+     * entry is replaced. Providing an entry with a partially qualified path
+     * causes an error to be returned and no entries to be added.
      *
      * @param entries Entries to add.
      * @return A promise resolved with nothing when the operation is completed.
@@ -30,7 +38,7 @@ export interface Directory {
      * @param paths An array of fully or partially qualified entry paths.
      * @return A list of entries.
      */
-    list(paths: string[]): Promise<DirectoryEntry>;
+    list(paths: string[]): Promise<DirectoryEntry[]>;
 
     /**
      * Removes all stored entries with paths matching those given.
@@ -44,6 +52,13 @@ export interface Directory {
      * @return A promise resolved with nothing when the operation is completed.
      */
     remove(paths: string[]): Promise<void>;
+
+    /**
+     * Closes directory, releasing any resources held.
+     *
+     * Using the directory after closing it causes undefined behavior.
+     */
+    close();
 }
 
 /**
