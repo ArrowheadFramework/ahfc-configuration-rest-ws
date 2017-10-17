@@ -21,7 +21,7 @@ export class ConfigurationSystem {
      * 
      * Throws error if access is denied.
      * 
-     * @param user Profile of requesting user.
+     * @param user Authorization profile of requesting user.
      * @return Management service, if user is authorized to consume it.
      */
     public management(user: any): ConfigurationManagement {
@@ -33,7 +33,7 @@ export class ConfigurationSystem {
      * 
      * Throws error if access is denied.
      * 
-     * @param user Profile of requesting user.
+     * @param user Authorization profile of requesting user.
      * @return Store service, if user is authorized to consume it.
      */
     public store(user: any): ConfigurationStore {
