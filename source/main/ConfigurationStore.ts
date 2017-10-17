@@ -4,11 +4,7 @@ import * as db from "./db";
 /**
  * An object useful for requesting configuration data.
  */
-export class ConfigurationStore {
-    public constructor(
-        private readonly database: db.Directory,
-    ) { }
-
+export interface ConfigurationStore {
     /**
      * Requests all documents the requestor is allowed to see, by the names of
      * the templates used to create them.
@@ -16,9 +12,5 @@ export class ConfigurationStore {
      * @param names Names of templates associated with desired documents.
      * @return Requested documents.
      */
-    public listDocumentsByTemplateNames(
-        names: string[]
-    ): Promise<acml.Document[]> {
-        throw new Error("Not implemented");
-    }
+    listDocumentsByTemplateNames(names: string[]): Promise<acml.Document[]>;
 }
