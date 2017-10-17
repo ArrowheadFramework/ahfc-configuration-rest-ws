@@ -20,7 +20,18 @@ export class Report implements apes.Writable {
         public readonly document: string,
         public readonly template: string,
         public readonly violations: Violation[],
-    ) { }
+    ) {
+        if (document.endsWith(".")) {
+            throw new Error(
+                "Report document name not fully qualified: " + document
+            );
+        }
+        if (template.endsWith(".")) {
+            throw new Error(
+                "Report template name not fully qualified: " + template
+            );
+        }
+    }
 
     write(writer: apes.Writer) {
         writer.writeMap(writer => writer

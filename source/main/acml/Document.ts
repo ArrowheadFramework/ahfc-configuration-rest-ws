@@ -16,7 +16,18 @@ export class Document implements apes.Writable {
         public readonly template: string,
         public readonly name: string,
         public readonly body: object,
-    ) { }
+    ) {
+        if (template.endsWith(".")) {
+            throw new Error(
+                "Document template name not fully qualified: " + template
+            );
+        }
+        if (name.endsWith(".")) {
+            throw new Error(
+                "Document name not fully qualified: " + name
+            );
+        }
+    }
 
     /**
      * Attempts to create new document from given source object.

@@ -23,7 +23,23 @@ export class Rule implements apes.Writable {
         public readonly template: string,
         public readonly priority: number,
         public readonly service: string,
-    ) { }
+    ) {
+        if (name.endsWith(".")) {
+            throw new Error(
+                "Rule name not fully qualified: " + name
+            );
+        }
+        if (document.endsWith(".")) {
+            throw new Error(
+                "Rule document name not fully qualified: " + document
+            );
+        }
+        if (template.endsWith(".")) {
+            throw new Error(
+                "Rule template name not fully qualified: " + template
+            );
+        }
+    }
 
     /**
      * Attempts to create new rule from given source object.

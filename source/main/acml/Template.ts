@@ -12,24 +12,20 @@ import * as vm from "vm";
  */
 export class Template implements Writable {
     /**
-     * Template name.
-     */
-    public readonly name: string;
-
-    /**
-     * Template specification.
-     */
-    public readonly body: TemplateBody;
-
-    /**
      * Creates new template with given name and specification.
      *
      * @param name Name of template.
      * @param body Template specification.
      */
-    public constructor(name: string, body: TemplateBody) {
-        this.name = name;
-        this.body = body;
+    public constructor(
+        public readonly name: string,
+        public readonly body: TemplateBody,
+    ) {
+        if (name.endsWith(".")) {
+            throw new Error(
+                "Template name not fully qualified: " + name
+            );
+        }
     }
 
     /**
