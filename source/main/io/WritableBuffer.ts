@@ -40,10 +40,48 @@ export class WritableBuffer extends stream.Writable {
     }
 
     /**
+     * Copies bytes written to internal buffer and returns the copy.
+     */
+    public copyBuffer(): Buffer {
+        const buffer = Buffer.allocUnsafe(this.size());
+        this.buffer.copy(buffer, 0, 0, this.size());
+        return buffer;
+    }
+
+    /**
      * Amount of bytes currently written to internal buffer, in bytes.
      */
     public size(): number {
         return this.cursor;
+    }
+
+    /**
+     * Copies internal buffer, resets it, and returns copy.
+     */
+    public pop(): Buffer {
+        const buffer = this.copyBuffer();
+        this.reset();
+        return buffer;
+    }
+
+    /**
+     * Resets buffer, causing any subsequent writes to be performed from the
+     * beginning of the internal buffer.
+     *
+     * If a capacity is provided, the internal buffer may be reduced in size if
+     * that capacity is smaller than the current capacity.
+     *
+     * @param capacity New internal buffer capacity, if any.
+     */
+    public reset(capacity?: number) {
+        if (capacity) {
+            capacity = alignSize(capacity);
+            if (this.buffer.length > capacity) {
+                this.buffer = Buffer.alloc(capacity);
+            }
+        }
+        this.buffer.fill(0, 0, this.cursor);
+        this.cursor = 0;
     }
 
     /**
