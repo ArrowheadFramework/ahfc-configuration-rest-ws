@@ -2,17 +2,22 @@
  * A database useful for storing arbitrary data in a manner similar to that of
  * a regular filesystem.
  *
+ * # Files and Folders
+ *
  * The directory contains two kinds of entires, files and folders. Files have
  * associated data, are created explicitly, and are referred to via fully
  * qualified paths. Folders may contain other folders and files, are created
  * implicitly, and are referred to via partially qualified paths.
  *
+ * # Paths
+ *
  * Each path is constituted by segments delimited by ASCII dots. The leftmost
  * segment is considered a child of the implicit root folder, and each
- * following segment is considered a child of the preceding segment. A path is
+ * following segment is considered a child of the preceding. A path is
  * considered partially qualified, i.e. referring to a folder, if it ends with
  * a trailing ASCII dot. In any other case the path is considered fully
- * qualified.
+ * qualified. All paths should begin with a leading ASCII dot. If the leading
+ * dot is missing, it will be treated as though it is present.
  */
 export interface Directory {
     /**

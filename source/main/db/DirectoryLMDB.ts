@@ -11,7 +11,7 @@ export class DirectoryLMDB implements Directory {
 
     /**
      * Creates new LMDB directory database.
-     * 
+     *
      * @param path Path to folder where database will or does reside. If the
      * folder does not exist, an attempt will be made to create it. The attempt
      * will only succeed, however, if all parent folders in its path already
@@ -38,6 +38,9 @@ export class DirectoryLMDB implements Directory {
                         throw new Error(
                             "Path not fully qualified: '" + entry.path + "'"
                         );
+                    }
+                    if (!entry.path.startsWith(".")) {
+                        entry.path = "." + entry.path;
                     }
                     txn.putBinary(this.dbi, entry.path, entry.value);
                 }
@@ -104,16 +107,19 @@ export class DirectoryLMDB implements Directory {
 }
 
 function visitEachMatch(paths: string[], cursor: lmdb.Cursor, f: () => void) {
-    ((paths && paths.length > 0) ? paths : [""])
-        .forEach(path => {
-            let key: string = cursor.goToRange(path);
-            if (path.endsWith(".")) {
-                while (key.startsWith(path)) {
-                    f();
-                    key = cursor.goToNext();
-                }
-            } else if (key === path) {
+    paths = (paths && paths.length > 0) ? paths : ["."];
+    paths.forEach(path => {
+        if (!path.startsWith(".")) {
+            path = "." + path;
+        }
+        let key: string = cursor.goToRange(path);
+        if (path.endsWith(".")) {
+            while (key.startsWith(path)) {
                 f();
+                key = cursor.goToNext();
             }
-        });
+        } else if (key === path) {
+            f();
+        }
+    });
 }
