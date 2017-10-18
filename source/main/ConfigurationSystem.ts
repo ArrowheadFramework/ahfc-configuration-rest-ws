@@ -20,22 +20,42 @@ export class ConfigurationSystem {
     public constructor(directory: db.Directory) {
         this.serviceManagement = new class implements ConfigurationManagement {
             addDocuments(documents: acml.Document[]): Promise<acml.Report[]> {
-                const map = new Map<string, acml.Document[]>();
+                return this.validateDocuments(documents)
+                    .then(reports => {
+                        const violationCount = reports
+                            .reduce((violationCount, report) => {
+                                return violationCount +
+                                    report.violations.length;
+                            }, 0);
+                        return violationCount === 0
+                            ? add(".d", documents.map(document => ({
+                                path: document.name,
+                                value: document
+                            }))).then(_ => reports)
+                            : reports;
+                    });
+            }
+
+            validateDocuments(
+                documents: acml.Document[]
+            ): Promise<acml.Report[]> {
+                const index = new Map<string, acml.Document[]>();
                 for (const document of documents) {
                     const path = normalizePath(document.template);
-                    map.set(path, (map.get(path) || []).concat(document));
+                    index.set(path, (index.get(path) || []).concat(document));
                 }
-                return this
-                    .listTemplates(Array.from(map.keys()))
+                return this.listTemplates(Array.from(index.keys()))
                     .then(templates => templates.reduce((reports, template) => {
-                        const documents = map.get(template.name) || [];
-                        for (let document; (document = documents.pop());) {
-                            reports.push(document);
+                        const path = normalizePath(template.name);
+                        const documents = index.get(path) || [];
+                        let document: acml.Document;
+                        while (document = documents.pop()) {
+                            reports.push(template.validate(document));
                         }
                         return reports;
                     }, new Array<acml.Report>()))
                     .then(reports => {
-                        for (const documents of map.values()) {
+                        for (const documents of index.values()) {
                             for (const document of documents) {
                                 reports.push(new acml.Report(
                                     document.name,
@@ -118,8 +138,7 @@ export class ConfigurationSystem {
             paths: string[],
             read: (value: object) => T
         ): Promise<T[]> {
-            return directory
-                .list(paths.map(path => prefixPath(prefix, path)))
+            return directory.list(paths.map(path => prefixPath(prefix, path)))
                 .then(entries => new Promise<T[]>((resolve, reject) => {
                     try {
                         resolve(entries.map(entry => {
