@@ -20,8 +20,9 @@ export class ConfigurationSystem {
      * Creates new configuration system handler.
      * 
      * @param directory Database in which system data is stored.
+     * @param user Authorization profile of user using system.
      */
-    public constructor(directory: db.Directory) {
+    public constructor(directory: db.Directory, user: any) {
         this.serviceManagement = new class implements ConfigurationManagement {
             addDocuments(documents: acml.Document[]): Promise<acml.Report[]> {
                 return directory.write(writer =>
@@ -86,7 +87,14 @@ export class ConfigurationSystem {
 
         this.serviceStore = new class implements ConfigurationStore {
             listDocumentsByTemplateNames(names): Promise<acml.Document[]> {
-                throw new Error("Method not implemented.");
+                return directory.read(reader => reader
+                    .list(names.map(name => prefixPath(".rt", name)))
+                    .then(entries => list(reader, ".r", entries
+                        .map(entry => entry.value.toString()), acml.Rule.read))
+                    // TODO: Only return documents where the rule in question
+                    // has a service name matching that of the requesting user.
+                    .then(rules => list(reader, ".d", rules
+                        .map(rule => rule.document), acml.Document.read)));
             }
         };
 
@@ -167,11 +175,10 @@ export class ConfigurationSystem {
      * Requests access to management service.
      * 
      * Throws error if access is denied.
-     * 
-     * @param user Authorization profile of requesting user.
+     *
      * @return Management service, if user is authorized to consume it.
      */
-    public management(user: any): ConfigurationManagement {
+    public management(): ConfigurationManagement {
         // TODO: Check user authorization.
         return this.serviceManagement;
     }
@@ -181,10 +188,9 @@ export class ConfigurationSystem {
      * 
      * Throws error if access is denied.
      * 
-     * @param user Authorization profile of requesting user.
      * @return Store service, if user is authorized to consume it.
      */
-    public store(user: any): ConfigurationStore {
+    public store(): ConfigurationStore {
         // TODO: Check user authorization.
         return this.serviceStore;
     }
