@@ -21,42 +21,30 @@
  */
 export interface Directory {
     /**
-     * Adds given array of entries.
+     * Executes given function in read-only database transaction.
      *
-     * If an added entry has a path equal to any existing entry, the existing
-     * entry is replaced. Providing an entry with a partially qualified path
-     * causes an error to be returned and no entries to be added.
+     * The provided transaction function is expected to return a promise. When
+     * the promise is fulfilled or rejected, the transaction is released. Using
+     * the transaction reader after a transaction has been released causes
+     * undefined behavior.
      *
-     * @param entries Entries to add.
-     * @return A promise resolved with nothing when the operation is completed.
+     * @param transaction Transaction function.
+     * @return Whatever was returned by the transaction function.
      */
-    add(entries: DirectoryEntry[]): Promise<void>;
+    read<T>(transaction: (reader: DirectoryReader) => Promise<T>): Promise<T>;
 
     /**
-     * Retrieves all stored entries with paths matching those given.
+     * Executes given function in read/write database transaction.
      *
-     * The provided paths may be fully or partially qualified. In case of any
-     * partially qualified path, all entries that begins with the same path
-     * segments are considered matches. Note that a single empty path, or a
-     * array of zero paths, will match everything.
+     * The provided transaction function is expected to return a promise. When
+     * the promise is fulfilled or rejected, the transaction is commited or
+     * aborted, respectively. Using a transaction writer after a transaction
+     * has been released causes undefined behavior.
      *
-     * @param paths An array of fully or partially qualified entry paths.
-     * @return A list of entries.
+     * @param transaction Transaction function.
+     * @return Whatever was returned by the transaction function.
      */
-    list(paths: string[]): Promise<DirectoryEntry[]>;
-
-    /**
-     * Removes all stored entries with paths matching those given.
-     *
-     * The provided paths may be fully or partially qualified. In case of any
-     * partially qualified path, all entries that begins with the same path
-     * segments are considered matches. Note that a single empty path, or a
-     * array of zero paths, will match everything.
-     *
-     * @param paths An array of fully or partially qualified template paths.
-     * @return A promise resolved with nothing when the operation is completed.
-     */
-    remove(paths: string[]): Promise<void>;
+    write<T>(transaction: (writer: DirectoryWriter) => Promise<T>): Promise<T>;
 
     /**
      * Closes directory, releasing any resources held.
@@ -75,4 +63,52 @@ export interface DirectoryEntry {
 
     /** Entry value. */
     value: Buffer;
+}
+
+/**
+ * A directory reader provided to read-only transactions.
+ */
+export interface DirectoryReader {
+    /**
+     * Retrieves all stored entries with paths matching those given.
+     *
+     * The provided paths may be fully or partially qualified. In case of any
+     * partially qualified path, all entries that begins with the same path
+     * segments are considered matches. Note that a single empty path, or a
+     * array of zero paths, will match everything.
+     *
+     * @param paths An array of fully or partially qualified entry paths.
+     * @return A list of entries.
+     */
+    list(paths: string[]): Promise<DirectoryEntry[]>;
+}
+
+/**
+ * A directory writer provided to read/write transactions.
+ */
+export interface DirectoryWriter extends DirectoryReader {
+    /**
+     * Adds given array of entries.
+     *
+     * If an added entry has a path equal to any existing entry, the existing
+     * entry is replaced. Providing an entry with a partially qualified path
+     * causes an error to be returned and no entries to be added.
+     *
+     * @param entries Entries to add.
+     * @return A promise resolved with nothing when the operation is completed.
+     */
+    add(entries: DirectoryEntry[]): Promise<void>;
+
+    /**
+     * Removes all stored entries with paths matching those given.
+     *
+     * The provided paths may be fully or partially qualified. In case of any
+     * partially qualified path, all entries that begins with the same path
+     * segments are considered matches. Note that a single empty path, or a
+     * array of zero paths, will match everything.
+     *
+     * @param paths An array of fully or partially qualified template paths.
+     * @return A promise resolved with nothing when the operation is completed.
+     */
+    remove(paths: string[]): Promise<void>;
 }

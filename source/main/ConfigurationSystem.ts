@@ -5,6 +5,10 @@ import { ConfigurationStore } from "./ConfigurationStore";
 import * as db from "./db";
 import * as io from "./io";
 
+interface NamedWritable extends apes.Writable {
+    name: string;
+}
+
 /**
  * Represents the Arrowhead Configuration System.
  */
@@ -20,125 +24,87 @@ export class ConfigurationSystem {
     public constructor(directory: db.Directory) {
         this.serviceManagement = new class implements ConfigurationManagement {
             addDocuments(documents: acml.Document[]): Promise<acml.Report[]> {
-                return this.validateDocuments(documents)
-                    .then(reports => {
-                        const violationCount = reports
-                            .reduce((violationCount, report) => {
-                                return violationCount +
-                                    report.violations.length;
-                            }, 0);
-                        return violationCount === 0
-                            ? add(".d", documents.map(document => ({
-                                path: document.name,
-                                value: document
-                            }))).then(_ => reports)
-                            : reports;
-                    });
-            }
-
-            validateDocuments(
-                documents: acml.Document[]
-            ): Promise<acml.Report[]> {
-                const index = new Map<string, acml.Document[]>();
-                for (const document of documents) {
-                    const path = normalizePath(document.template);
-                    index.set(path, (index.get(path) || []).concat(document));
-                }
-                return this.listTemplates(Array.from(index.keys()))
-                    .then(templates => templates.reduce((reports, template) => {
-                        const path = normalizePath(template.name);
-                        const documents = index.get(path) || [];
-                        let document: acml.Document;
-                        while (document = documents.pop()) {
-                            reports.push(template.validate(document));
-                        }
-                        return reports;
-                    }, new Array<acml.Report>()))
-                    .then(reports => {
-                        for (const documents of index.values()) {
-                            for (const document of documents) {
-                                reports.push(new acml.Report(
-                                    document.name,
-                                    document.template,
-                                    [{
-                                        path: ".",
-                                        condition: "template != undefined",
-                                    }]
-                                ));
-                            }
-                        }
-                        return reports;
-                    });
+                return directory.write(writer =>
+                    validateDocuments(writer, documents)
+                        .then(reports => {
+                            const violationCount = reports
+                                .reduce((violationCount, report) => {
+                                    return violationCount +
+                                        report.violations.length;
+                                }, 0);
+                            return violationCount === 0
+                                ? add(writer, ".d", documents)
+                                    .then(() => reports)
+                                : reports;
+                        }));
             }
 
             listDocuments(names: string[]): Promise<acml.Document[]> {
-                return list(".d", names, acml.Document.read);
+                return directory.read(reader =>
+                    list(reader, ".d", names, acml.Document.read));
             }
 
             removeDocuments(names: string[]): Promise<void> {
-                return remove(".d", names);
+                return directory.write(writer => remove(writer, ".d", names));
             }
 
             addRules(rules: acml.Rule[]): Promise<void> {
-                return add(".r", rules.map(rule => ({
-                    path: rule.name,
-                    value: rule,
-                })));
+                return directory.write(writer =>
+                    add(writer, ".r", rules)
+                        .then(() => writer.add(rules.map(rule => ({
+                            path: prefixPath(".rt", rule.template),
+                            value: Buffer.from(prefixPath(".r", rule.name)),
+                        })))));
             }
 
             listRules(names: string[]): Promise<acml.Rule[]> {
-                return list(".r", names, acml.Rule.read);
+                return directory.read(reader =>
+                    list(reader, ".r", names, acml.Rule.read));
             }
 
             removeRules(names: string[]): Promise<void> {
-                return remove(".r", names);
+                return directory.write(writer =>
+                    list(writer, ".r", names, acml.Rule.read)
+                        .then(rules => remove(writer, ".rt", rules
+                            .map(rule => rule.template)))
+                        .then(() => remove(writer, ".r", names)));
             }
 
             addTemplates(templates: acml.Template[]): Promise<void> {
-                return add(".t", templates.map(template => ({
-                    path: template.name,
-                    value: template,
-                })));
+                return directory.write(writer => add(writer, ".t", templates));
             }
 
             listTemplates(names: string[]): Promise<acml.Template[]> {
-                return list(".t", names, acml.Template.read);
+                return directory.read(reader =>
+                    list(reader, ".t", names, acml.Template.read));
             }
 
             removeTemplates(names: string[]): Promise<void> {
-                return remove(".t", names);
+                return directory.write(writer => remove(writer, ".t", names));
             }
         };
 
         this.serviceStore = new class implements ConfigurationStore {
-            listDocumentsByTemplateNames(
-                names: string[]
-            ): Promise<acml.Document[]> {
+            listDocumentsByTemplateNames(names): Promise<acml.Document[]> {
                 throw new Error("Method not implemented.");
             }
         };
 
-        function add(
-            prefix: string,
-            entries: { path: string, value: apes.Writable }[]
-        ): Promise<void> {
+        function add(writer, prefix, values: NamedWritable[]): Promise<void> {
             const sink = new io.WritableBuffer(128);
-            const writer = new apes.WriterJSON(sink);
-            return directory.add(entries.map(entry => {
-                entry.value.write(writer);
+            const sinkWriter = new apes.WriterJSON(sink);
+            return writer.add(values.map(entry => {
+                entry.write(sinkWriter);
                 return {
-                    path: prefixPath(prefix, entry.path),
+                    path: prefixPath(prefix, entry.name),
                     value: sink.pop(),
                 };
             }));
         }
 
-        function list<T>(
-            prefix: string,
-            paths: string[],
-            read: (value: object) => T
-        ): Promise<T[]> {
-            return directory.list(paths.map(path => prefixPath(prefix, path)))
+        function list<T>(reader, prefix, paths, read: (x) => T): Promise<T[]> {
+            return reader
+                .list(paths.map(path => prefixPath(prefix, path)))
                 .then(entries => new Promise<T[]>((resolve, reject) => {
                     try {
                         resolve(entries.map(entry => {
@@ -150,12 +116,8 @@ export class ConfigurationSystem {
                 }));
         }
 
-        function remove(
-            prefix: string,
-            paths: string[]
-        ): Promise<void> {
-            paths = paths.map(path => prefixPath(prefix, path));
-            return directory.remove(paths);
+        function remove(writer, prefix, paths): Promise<void> {
+            return writer.remove(paths.map(path => prefixPath(prefix, path)));
         }
 
         function normalizePath(path: string): string {
@@ -164,6 +126,40 @@ export class ConfigurationSystem {
 
         function prefixPath(prefix: string, path: string): string {
             return prefix + normalizePath(path);
+        }
+
+        function validateDocuments(reader, documents): Promise<acml.Report[]> {
+            const index = new Map<string, acml.Document[]>();
+            for (const document of documents) {
+                const path = normalizePath(document.template);
+                index.set(path, (index.get(path) || []).concat(document));
+            }
+            const templatePaths = Array.from(index.keys());
+            return list(reader, ".t", templatePaths, acml.Template.read)
+                .then(templates => templates.reduce((reports, template) => {
+                    const path = normalizePath(template.name);
+                    const documents = index.get(path) || [];
+                    let document: acml.Document;
+                    while (document = documents.pop()) {
+                        reports.push(template.validate(document));
+                    }
+                    return reports;
+                }, new Array<acml.Report>()))
+                .then(reports => {
+                    for (const documents of index.values()) {
+                        for (const document of documents) {
+                            reports.push(new acml.Report(
+                                document.name,
+                                document.template,
+                                [{
+                                    path: ".",
+                                    condition: "template != undefined",
+                                }]
+                            ));
+                        }
+                    }
+                    return reports;
+                });
         }
     }
 

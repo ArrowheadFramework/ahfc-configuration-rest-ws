@@ -1,4 +1,9 @@
-import { Directory, DirectoryEntry } from "./Directory";
+import {
+    Directory,
+    DirectoryEntry,
+    DirectoryReader,
+    DirectoryWriter
+} from "./Directory";
 import * as fs from "fs";
 import * as lmdb from "node-lmdb";
 
@@ -28,40 +33,66 @@ export class DirectoryLMDB implements Directory {
         this.dbi = this.env.openDbi({ create: true, name: null });
     }
 
-    public add(entries: DirectoryEntry[]): Promise<void> {
-        return new Promise((resolve, reject) => {
-            let txn: lmdb.Txn;
-            try {
-                txn = this.env.beginTxn();
-                for (const entry of entries) {
-                    if (entry.path.endsWith(".")) {
-                        throw new Error(
-                            "Path not fully qualified: '" + entry.path + "'"
-                        );
-                    }
-                    if (!entry.path.startsWith(".")) {
-                        entry.path = "." + entry.path;
-                    }
-                    txn.putBinary(this.dbi, entry.path, entry.value);
-                }
-                txn.commit();
-                resolve();
-            } catch (exception) {
-                reject(exception);
-                if (txn) {
+    public read<T>(f: (r: DirectoryReader) => Promise<T>): Promise<T> {
+        let txn: lmdb.Txn;
+        try {
+            txn = this.env.beginTxn({ readOnly: true });
+            return f(new DirectoryReaderLMDB(this.env, this.dbi, txn))
+                .then(result => {
                     txn.abort();
-                }
+                    return result;
+                })
+                .catch(error => {
+                    txn.abort();
+                    return Promise.reject(error);
+                });
+        } catch (error) {
+            if (txn) {
+                txn.abort();
             }
-        });
+            return Promise.reject(error);
+        }
     }
+
+    public write<T>(f: (w: DirectoryWriter) => Promise<T>): Promise<T> {
+        let txn: lmdb.Txn;
+        try {
+            txn = this.env.beginTxn({ readOnly: false });
+            return f(new DirectoryWriterLMDB(this.env, this.dbi, txn))
+                .then(result => {
+                    txn.commit();
+                    return result;
+                })
+                .catch(error => {
+                    txn.abort();
+                    return Promise.reject(error);
+                });
+        } catch (error) {
+            if (txn) {
+                txn.abort();
+            }
+            return Promise.reject(error);
+        }
+    }
+
+    public close() {
+        this.dbi.close();
+        this.env.close();
+    }
+}
+
+class DirectoryReaderLMDB implements DirectoryReader {
+    public constructor(
+        protected readonly env: lmdb.Env,
+        protected readonly dbi: lmdb.Dbi,
+        protected readonly txn: lmdb.Txn,
+    ) { }
 
     public list(paths: string[]): Promise<DirectoryEntry[]> {
         return new Promise((resolve, reject) => {
-            let txn: lmdb.Txn;
             try {
-                txn = this.env.beginTxn({ readOnly: true });
                 const result = new Array<DirectoryEntry>();
-                const cursor = new lmdb.Cursor(txn, this.dbi);
+                const cursor = new lmdb.Cursor(this.txn, this.dbi);
                 visitEachMatch(paths, cursor, () => {
                     cursor.getCurrentBinary((path, value) => {
                         result.push({ path, value });
@@ -71,38 +102,50 @@ export class DirectoryLMDB implements Directory {
                 resolve(result);
             } catch (exception) {
                 reject(exception);
-            } finally {
-                if (txn) {
-                    txn.abort();
+            }
+        });
+    }
+}
+
+class DirectoryWriterLMDB extends DirectoryReaderLMDB implements DirectoryWriter {
+    public constructor(env: lmdb.Env, dbi: any, txn: lmdb.Txn) {
+        super(env, dbi, txn);
+    }
+
+    public add(entries: DirectoryEntry[]): Promise<void> {
+        return new Promise((resolve, reject) => {
+            try {
+                for (const entry of entries) {
+                    if (entry.path.endsWith(".")) {
+                        throw new Error(
+                            "Path not fully qualified: '" + entry.path + "'"
+                        );
+                    }
+                    if (!entry.path.startsWith(".")) {
+                        entry.path = "." + entry.path;
+                    }
+                    this.txn.putBinary(this.dbi, entry.path, entry.value);
                 }
+                resolve();
+            } catch (exception) {
+                reject(exception);
             }
         });
     }
 
     public remove(paths: string[]): Promise<void> {
         return new Promise((resolve, reject) => {
-            let txn: lmdb.Txn;
             try {
-                txn = this.env.beginTxn({ readOnly: false });
-                const cursor = new lmdb.Cursor(txn, this.dbi);
+                const cursor = new lmdb.Cursor(this.txn, this.dbi);
                 visitEachMatch(paths, cursor, () => {
                     cursor.del();
                 });
                 cursor.close();
-                txn.commit();
                 resolve();
             } catch (exception) {
                 reject(exception);
-                if (txn) {
-                    txn.abort();
-                }
             }
         });
-    }
-
-    public close() {
-        this.dbi.close();
-        this.env.close();
     }
 }
 
