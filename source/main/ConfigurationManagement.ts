@@ -11,9 +11,8 @@ export interface ConfigurationManagement {
      * the existing document is replaced.
      *
      * @param documents Documents to add.
-     * @return A list of reports in an order corresponds with that of the given
-     * array of documents. Reports are provided for all documents, even if they
-     * are all sound.
+     * @return A list of document validation reports. Reports are provided for
+     * all documents, even if they are sound.
      */
     addDocuments(documents: acml.Document[]): Promise<acml.Report[]>;
 
