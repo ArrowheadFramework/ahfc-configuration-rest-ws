@@ -88,7 +88,7 @@ export class ConfigurationSystem {
         this.serviceStore = new class implements ConfigurationStore {
             listDocumentsByTemplateNames(names): Promise<acml.Document[]> {
                 return directory.read(reader => reader
-                    .list(names.map(name => prefixPath(".rt", name)))
+                    .list(prefixPaths(".rt", names))
                     .then(entries => list(reader, ".r", entries
                         .map(entry => entry.value.toString()), acml.Rule.read))
                     // TODO: Only return documents where the rule in question
@@ -112,7 +112,7 @@ export class ConfigurationSystem {
 
         function list<T>(reader, prefix, paths, read: (x) => T): Promise<T[]> {
             return reader
-                .list(paths.map(path => prefixPath(prefix, path)))
+                .list(prefixPaths(prefix, paths))
                 .then(entries => new Promise<T[]>((resolve, reject) => {
                     try {
                         resolve(entries.map(entry => {
@@ -125,7 +125,7 @@ export class ConfigurationSystem {
         }
 
         function remove(writer, prefix, paths): Promise<void> {
-            return writer.remove(paths.map(path => prefixPath(prefix, path)));
+            return writer.remove(prefixPaths(prefix, paths));
         }
 
         function normalizePath(path: string): string {
@@ -134,6 +134,12 @@ export class ConfigurationSystem {
 
         function prefixPath(prefix: string, path: string): string {
             return prefix + normalizePath(path);
+        }
+
+        function prefixPaths(prefix: string, paths: string[]): string[] {
+            return (!paths || paths.length === 0)
+                ? [prefix]
+                : paths.map(path => prefixPath(prefix, path));
         }
 
         function validateDocuments(reader, documents): Promise<acml.Report[]> {
