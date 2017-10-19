@@ -49,6 +49,9 @@ export const MIME = {
      * @return Read function, or `undefined` if no matching decoder exists.
      */
     decoderFor: (mimeType: string): Read => {
+        if (!mimeType) {
+            return undefined;
+        }
         let option = OPTIONS_READ.find(option => option.matches(mimeType));
         return option ? option.t : undefined;
     },
@@ -61,6 +64,9 @@ export const MIME = {
      * no matching encoder exists.
      */
     encoderFor: (mimeType: string): [Write, string] => {
+        if (!mimeType) {
+            return undefined;
+        }
         let option = OPTIONS_WRITE.find(option => option.matches(mimeType));
         return option ? [option.t, option.mime] : undefined;
     }
