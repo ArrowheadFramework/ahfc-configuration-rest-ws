@@ -118,7 +118,7 @@ export class Server {
      * @param route Route to register.
      * @return Self.
      */
-    public handle(route: Route) : Server {
+    public handle(route: Route): Server {
         const key = toRouteMapKey(route.method, route.path);
         if (this.routeMap.has(key)) {
             throw new Error("Route already set for: " + key);
@@ -198,10 +198,12 @@ export class Server {
             }
             out.statusCode = response.code;
             out.statusMessage = response.reason;
-            Object.getOwnPropertyNames(response.headers).forEach(name => {
-                const value = response.headers[name];
-                out.setHeader(name, value);
-            });
+            if (response.headers) {
+                Object.getOwnPropertyNames(response.headers).forEach(name => {
+                    const value = response.headers[name];
+                    out.setHeader(name, value);
+                });
+            }
             if (response.body) {
                 out.setHeader("content-type", writeType);
                 response.body.write(write(out));
@@ -218,14 +220,6 @@ export class Server {
                 code: Code.NotFound,
                 reason: "Not found"
             } as Response);
-        }
-        const contentType = request.headers["content-type"];
-        const read = apes.MIME.decoderFor(contentType);
-        if (!read) {
-            return Promise.resolve({
-                code: Code.UnsupportedMediaType,
-                reason: "Unsupported Media Type " + contentType
-            });
         }
         return route.handler(
             request.parameters,
