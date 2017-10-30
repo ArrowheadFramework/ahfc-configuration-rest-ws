@@ -1,3 +1,4 @@
+import * as acml from "./acml";
 import * as ahfc from "ahfc-client";
 import * as apes from "./apes";
 import { ConfigurationSystem } from "./ConfigurationSystem";
@@ -31,6 +32,7 @@ function start() {
                 method: http.Method.DELETE,
                 path: "/documents",
                 handler: (params, headers) => {
+                    // TODO: Authenticate user and give reference to system.
                     const system = new ConfigurationSystem(directory, null);
                     const names = (params["document_names"] || "").split(",");
                     return system.management()
@@ -45,6 +47,7 @@ function start() {
                 method: http.Method.GET,
                 path: "/documents",
                 handler: (params, headers) => {
+                    // TODO: Authenticate user and give reference to system.
                     const system = new ConfigurationSystem(directory, null);
                     if (params["template_names"]) {
                         const names = params["template_names"].split(",");
@@ -71,10 +74,36 @@ function start() {
             .handle({
                 method: http.Method.POST,
                 path: "/documents",
-                handler: (params, headers, body) => Promise.resolve({
-                    code: http.Code.NotImplemented,
-                    reason: "Not implemented",
-                }),
+                handler: (params, headers, body) => {
+                    if (!Array.isArray(body)) {
+                        return Promise.reject({
+                            code: http.Code.BadRequest,
+                            reason: "Bad request",
+                            body: new apes.WritableError("Not an array."),
+                        });
+                    }
+                    try {
+                        const documents = new Array<acml.Document>();
+                        for (const item of body) {
+                            documents.push(acml.Document.read(item));
+                        }
+                        // TODO: Authenticate user and give reference to system.
+                        const system = new ConfigurationSystem(directory, null);
+                        return system.management()
+                            .addDocuments(documents)
+                            .then(reports => ({
+                                code: http.Code.Created,
+                                reason: "Created",
+                                body: new apes.WritableArray(reports),
+                            }));
+                    } catch (exception) {
+                        return Promise.reject({
+                            code: http.Code.BadRequest,
+                            reason: "Bad request",
+                            body: new apes.WritableError(exception.message)
+                        });
+                    }
+                },
             })
 
             // Rule handlers.
@@ -82,6 +111,7 @@ function start() {
                 method: http.Method.DELETE,
                 path: "/rules",
                 handler: (params, headers) => {
+                    // TODO: Authenticate user and give reference to system.
                     const system = new ConfigurationSystem(directory, null);
                     const names = (params["rule_names"] || "").split(",");
                     return system.management()
@@ -96,6 +126,7 @@ function start() {
                 method: http.Method.GET,
                 path: "/rules",
                 handler: (params, headers) => {
+                    // TODO: Authenticate user and give reference to system.
                     const system = new ConfigurationSystem(directory, null);
                     const names = (params["rule_names"] || "").split(",");
                     return system.management()
@@ -110,10 +141,36 @@ function start() {
             .handle({
                 method: http.Method.POST,
                 path: "/rules",
-                handler: (params, headers, body) => Promise.resolve({
-                    code: http.Code.NotImplemented,
-                    reason: "Not implemented",
-                }),
+                handler: (params, headers, body) => {
+                    if (!Array.isArray(body)) {
+                        return Promise.reject({
+                            code: http.Code.BadRequest,
+                            reason: "Bad request",
+                            body: new apes.WritableError("Not an array."),
+                        });
+                    }
+                    try {
+                        const rules = new Array<acml.Rule>();
+                        for (const item of body) {
+                            rules.push(acml.Rule.read(item));
+                        }
+                        // TODO: Authenticate user and give reference to system.
+                        const system = new ConfigurationSystem(directory, null);
+                        return system.management()
+                            .addRules(rules)
+                            .then(reports => ({
+                                code: http.Code.Created,
+                                reason: "Created",
+                                body: new apes.WritableArray(reports),
+                            }));
+                    } catch (exception) {
+                        return Promise.reject({
+                            code: http.Code.BadRequest,
+                            reason: "Bad request",
+                            body: new apes.WritableError(exception.message)
+                        });
+                    }
+                },
             })
 
             // Template handlers.
@@ -121,6 +178,7 @@ function start() {
                 method: http.Method.DELETE,
                 path: "/templates",
                 handler: (params, headers) => {
+                    // TODO: Authenticate user and give reference to system.
                     const system = new ConfigurationSystem(directory, null);
                     const names = (params["template_names"] || "").split(",");
                     return system.management()
@@ -135,6 +193,7 @@ function start() {
                 method: http.Method.GET,
                 path: "/templates",
                 handler: (params, headers) => {
+                    // TODO: Authenticate user and give reference to system.
                     const system = new ConfigurationSystem(directory, null);
                     const names = (params["template_names"] || "").split(",");
                     return system.management()
@@ -149,10 +208,36 @@ function start() {
             .handle({
                 method: http.Method.POST,
                 path: "/templates",
-                handler: (params, headers, body) => Promise.resolve({
-                    code: http.Code.NotImplemented,
-                    reason: "Not implemented",
-                }),
+                handler: (params, headers, body) => {
+                    if (!Array.isArray(body)) {
+                        return Promise.reject({
+                            code: http.Code.BadRequest,
+                            reason: "Bad request",
+                            body: new apes.WritableError("Not an array."),
+                        });
+                    }
+                    try {
+                        const templates = new Array<acml.Template>();
+                        for (const item of body) {
+                            templates.push(acml.Template.read(item));
+                        }
+                        // TODO: Authenticate user and give reference to system.
+                        const system = new ConfigurationSystem(directory, null);
+                        return system.management()
+                            .addTemplates(templates)
+                            .then(reports => ({
+                                code: http.Code.Created,
+                                reason: "Created",
+                                body: new apes.WritableArray(reports),
+                            }));
+                    } catch (exception) {
+                        return Promise.reject({
+                            code: http.Code.BadRequest,
+                            reason: "Bad request",
+                            body: new apes.WritableError(exception.message)
+                        });
+                    }
+                },
             })
 
             .listen(config.port);
