@@ -20,3 +20,13 @@ export class WritableArray<T> extends Array<T> implements Writable {
         writer.writeList(writer => this.forEach(item => writer.add(item)));
     }
 }
+
+/**
+ * An ECMAScript error that implements the APES Writable interface.
+ */
+export class WritableError extends Error implements Writable {
+    public write(writer: Writer) {
+        writer.writeMap(writer => writer
+            .addText("Message", this.message));
+    }
+}
