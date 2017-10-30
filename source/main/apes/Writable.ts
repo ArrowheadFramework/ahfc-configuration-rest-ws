@@ -15,8 +15,8 @@ export interface Writable {
 /**
  * An ECMAScript array that implements the APES Writable interface.
  */
-export class WritableArray extends Array implements Writable {
-    write(writer: Writer) {
+export class WritableArray<T> extends Array<T> implements Writable {
+    public write(writer: Writer) {
         writer.writeList(writer => this.forEach(item => writer.add(item)));
     }
 }
