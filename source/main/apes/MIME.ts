@@ -68,6 +68,6 @@ export const MIME = {
             return undefined;
         }
         let option = OPTIONS_WRITE.find(option => option.matches(mimeType));
-        return option ? [option.t, option.mime] : undefined;
+        return option ? [option.t, option.mime] : [undefined, undefined];
     }
 }
