@@ -21,9 +21,13 @@ function start() {
 
     serviceDiscovery.publish({
         serviceType,
-        serviceInstanceName,
+        serviceName: serviceInstanceName,
         endpoint: config.endpoint,
         port: config.port,
+        metadata: {
+            path: "/",
+            version: "" + process.env.npm_package_version
+        }
     }).then(() => {
         const directory = new db.DirectoryLMDB(config.databasePath);
         new http.Server()
@@ -242,8 +246,8 @@ function start() {
 
             .listen(config.port);
     }, error => {
-        console.log("Failed to setup Arrowhead Configuration System.");
-        console.log("Cause:\n%s", error);
+        console.log("Failed to setup Arrowhead Configuration System. Reason:");
+        console.log(error);
         process.exit(1);
     });
 }
@@ -252,7 +256,7 @@ function start() {
 function exit() {
     serviceDiscovery.unpublish({
         serviceType,
-        serviceInstanceName
+        serviceName: serviceInstanceName
     }).then(() => {
         process.exit(0);
     }, error => {
@@ -276,5 +280,10 @@ function exit() {
     process.on("SIGTERM", onExit);
     process.on("SIGHUP", onExit);
 
-    start();
+    try {
+        start();
+    } catch (error) {
+        console.log("Failed to start Arrowhead Configuration System. Reason:");
+        console.log(error);
+    }
 }
