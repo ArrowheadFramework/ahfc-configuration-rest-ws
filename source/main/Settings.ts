@@ -34,15 +34,23 @@ export class Settings {
      */
     public static fromFileAt(path: string): Settings {
         if (!fs.existsSync(path)) {
-            return new Settings();
+            fs.writeFileSync(path, "{}\n");
         }
-        const file = JSON.parse(fs.readFileSync(path, "utf8"));
+        const file = fs.readFileSync(path, "utf8")
+        let settings;
+        try {
+            settings = JSON.parse(file);
+        } catch (error) {
+            throw new SyntaxError(
+                `Failed to parse JSON settings file (${path}): ${error}`
+            );
+        }
         return new Settings(
-            file.dnssd,
-            file.databasePath,
-            file.endpoint,
-            file.port,
-            file.instanceName
+            settings.dnssd,
+            settings.databasePath,
+            settings.endpoint,
+            settings.port,
+            settings.instanceName
         );
     }
 
