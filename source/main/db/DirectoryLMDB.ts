@@ -149,8 +149,25 @@ class DirectoryWriterLMDB extends DirectoryReaderLMDB implements DirectoryWriter
     }
 }
 
+function filterOverlappingPaths(paths: string[]) {
+    paths = paths.sort();
+    const result = [];
+    for (let i = 0; i < paths.length; ++i) {
+        if (paths[i].endsWith(".")) {
+            const prefix = paths[i++];
+            result.push(prefix);
+            while (paths[i] && paths[i].startsWith(prefix)) {
+                ++i;
+            }
+        } else {
+            result.push(paths[i]);
+        }
+    }
+    return result;
+}
+
 function visitEachMatch(paths: string[], cursor: lmdb.Cursor, f: () => void) {
-    paths = (paths && paths.length > 0) ? paths : ["."];
+    paths = (paths && paths.length > 0) ? filterOverlappingPaths(paths) : ["."];
     paths.forEach(path => {
         if (!path.startsWith(".")) {
             path = "." + path;

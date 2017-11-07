@@ -15,12 +15,12 @@ export function readAll(r: stream.Readable, limit?: number): Promise<Buffer> {
     return new Promise((resolve, reject) => {
         r.on("readable", () => {
             const chunk = r.read() as Buffer;
-            if (!(chunk instanceof Buffer || typeof chunk === "string")) {
-                reject(new Error("Object streams not supported"));
-                return;
-            }
             if (chunk === null) {
                 resolve(sink.asBuffer());
+                return;
+            }
+            if (!(chunk instanceof Buffer || typeof chunk === "string")) {
+                reject(new Error("Object streams not supported"));
                 return;
             }
             if (limit && sink.size() + chunk.length > limit) {

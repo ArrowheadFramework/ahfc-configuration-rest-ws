@@ -8,6 +8,8 @@ import * as verify from "../util/verify";
  * documents by template name. 
  */
 export class Rule implements apes.Writable {
+    public readonly isWritable = true;
+
     /**
      * Creates new configuration rule.
      * 
@@ -49,12 +51,20 @@ export class Rule implements apes.Writable {
      */
     public static read(source: object): Rule {
         return new Rule(
-            verify.isString(source["RuleName"]),
-            verify.isString(source["DocumentName"]),
-            verify.isString(source["TemplateName"]),
+            isValidName(source["RuleName"], "Rule"),
+            isValidName(source["DocumentName"], "Document"),
+            isValidName(source["TemplateName"], "Template"),
             verify.isNumber(source["Priority"]),
             verify.isString(source["ServiceName"]),
         );
+
+        function isValidName(name: string, type: string): string {
+            return verify.isValid(name,
+                name => typeof name === "string" && name.trim().length > 0
+                    && !name.endsWith("."),
+                `${type} name must be fully qualified: ` +
+                JSON.stringify(source))
+        }
     }
 
     public write(writer: apes.Writer) {

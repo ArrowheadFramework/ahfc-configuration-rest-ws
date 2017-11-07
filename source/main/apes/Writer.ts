@@ -52,6 +52,9 @@ export abstract class WriterList {
             default:
                 throw new TypeError("Bad value type: " + value);
         }
+        if (value.isWritable) {
+            return this.addWritable(value);
+        }
         if (value instanceof Map) {
             return this.addMap(writer => {
                 for (const entry of value.entries()) {

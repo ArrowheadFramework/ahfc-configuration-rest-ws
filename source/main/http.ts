@@ -143,7 +143,7 @@ export class Server {
 
             const data = {
                 method: Method[request.method.trim().toUpperCase()],
-                path: uridata.path,
+                path: uridata.pathname,
                 parameters: uridata.query,
                 headers: request.headers,
                 body: undefined,

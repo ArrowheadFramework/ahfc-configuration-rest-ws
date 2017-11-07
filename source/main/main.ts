@@ -60,7 +60,7 @@ function start() {
                             .then(documents => ({
                                 code: http.Code.OK,
                                 reason: "OK",
-                                body: new apes.WritableArray(documents),
+                                body: new apes.WritableArray(...documents),
                             }));
                     }
                     const names = (params["document_names"] || "").split(",");
@@ -71,7 +71,7 @@ function start() {
                         .then(documents => ({
                             code: http.Code.OK,
                             reason: "OK",
-                            body: new apes.WritableArray(documents),
+                            body: new apes.WritableArray(...documents),
                         }));
                 },
             })
@@ -80,7 +80,7 @@ function start() {
                 path: "/documents",
                 handler: (params, headers, body) => {
                     if (!Array.isArray(body)) {
-                        return Promise.reject({
+                        return Promise.resolve({
                             code: http.Code.BadRequest,
                             reason: "Bad request",
                             body: new apes.WritableError("Not an array."),
@@ -98,10 +98,10 @@ function start() {
                             .then(reports => ({
                                 code: http.Code.Created,
                                 reason: "Created",
-                                body: new apes.WritableArray(reports),
+                                body: new apes.WritableArray(...reports),
                             }));
                     } catch (exception) {
-                        return Promise.reject({
+                        return Promise.resolve({
                             code: http.Code.BadRequest,
                             reason: "Bad request",
                             body: new apes.WritableError(exception.message)
@@ -138,7 +138,7 @@ function start() {
                         .then(rules => ({
                             code: http.Code.OK,
                             reason: "OK",
-                            body: new apes.WritableArray(rules),
+                            body: new apes.WritableArray(...rules),
                         }));
                 },
             })
@@ -147,7 +147,7 @@ function start() {
                 path: "/rules",
                 handler: (params, headers, body) => {
                     if (!Array.isArray(body)) {
-                        return Promise.reject({
+                        return Promise.resolve({
                             code: http.Code.BadRequest,
                             reason: "Bad request",
                             body: new apes.WritableError("Not an array."),
@@ -162,13 +162,13 @@ function start() {
                         const system = new ConfigurationSystem(directory, null);
                         return system.management()
                             .addRules(rules)
-                            .then(reports => ({
+                            .then(() => ({
                                 code: http.Code.Created,
                                 reason: "Created",
-                                body: new apes.WritableArray(reports),
+                                body: new apes.WritableArray(...rules),
                             }));
                     } catch (exception) {
-                        return Promise.reject({
+                        return Promise.resolve({
                             code: http.Code.BadRequest,
                             reason: "Bad request",
                             body: new apes.WritableError(exception.message)
@@ -205,7 +205,7 @@ function start() {
                         .then(templates => ({
                             code: http.Code.OK,
                             reason: "OK",
-                            body: new apes.WritableArray(templates),
+                            body: new apes.WritableArray(...templates),
                         }));
                 },
             })
@@ -214,7 +214,7 @@ function start() {
                 path: "/templates",
                 handler: (params, headers, body) => {
                     if (!Array.isArray(body)) {
-                        return Promise.reject({
+                        return Promise.resolve({
                             code: http.Code.BadRequest,
                             reason: "Bad request",
                             body: new apes.WritableError("Not an array."),
@@ -229,13 +229,13 @@ function start() {
                         const system = new ConfigurationSystem(directory, null);
                         return system.management()
                             .addTemplates(templates)
-                            .then(reports => ({
+                            .then(() => ({
                                 code: http.Code.Created,
                                 reason: "Created",
-                                body: new apes.WritableArray(reports),
+                                body: new apes.WritableArray(...templates),
                             }));
                     } catch (exception) {
-                        return Promise.reject({
+                        return Promise.resolve({
                             code: http.Code.BadRequest,
                             reason: "Bad request",
                             body: new apes.WritableError(exception.message)

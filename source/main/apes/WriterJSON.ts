@@ -63,13 +63,13 @@ class WriterListJSON extends WriterList {
     public addText(value: string): this {
         this.writeColon();
         value = (value as string)
-            .replace('"', '\\"')
-            .replace("\\", "\\\\")
-            .replace("\b", "\\b")
-            .replace("\f", "\\f")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-            .replace("\t", "\\t");
+            .replace(/\\/g, "\x5c\x5c")
+            .replace(/"/g, '\x5c"')
+            .replace(/\x07/g, "\x5cb")
+            .replace(/\f/g, "\x5cf")
+            .replace(/\n/g, "\x5cn")
+            .replace(/\r/g, "\x5cr")
+            .replace(/\t/g, "\x5ct");
 
         this.sink.write('"' + value + '"');
         return this;
@@ -139,13 +139,13 @@ class WriterMapJSON extends WriterMap {
     public addText(key: string, value: string): this {
         this.writeCommaKeyColon(key);
         value = (value as string)
-            .replace('"', '\\"')
-            .replace("\\", "\\\\")
-            .replace("\b", "\\b")
-            .replace("\f", "\\f")
-            .replace("\n", "\\n")
-            .replace("\r", "\\r")
-            .replace("\t", "\\t");
+            .replace(/\\/g, "\x5c\x5c")
+            .replace(/"/g, '\x5c"')
+            .replace(/\x07/g, "\x5cb")
+            .replace(/\f/g, "\x5cf")
+            .replace(/\n/g, "\x5cn")
+            .replace(/\r/g, "\x5cr")
+            .replace(/\t/g, "\x5ct");
 
         this.sink.write('"' + value + '"');
         return this;

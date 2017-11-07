@@ -9,6 +9,8 @@ import { TemplateCondition } from "./Template";
  * _sound_ document.
  */
 export class Report implements apes.Writable {
+    public readonly isWritable = true;
+
     /**
      * Creates new configuration document report.
      * 

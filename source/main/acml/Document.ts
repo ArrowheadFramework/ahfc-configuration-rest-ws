@@ -5,6 +5,8 @@ import * as verify from "../util/verify";
  * A configuration document.
  */
 export class Document implements apes.Writable {
+    public readonly isWritable = true;
+
     /**
      * Creates new configuration document.
      * 

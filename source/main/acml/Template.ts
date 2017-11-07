@@ -11,6 +11,8 @@ import * as vm from "vm";
  * a configuration document.
  */
 export class Template implements Writable {
+    public readonly isWritable = true;
+    
     /**
      * Creates new template with given name and specification.
      *
@@ -81,6 +83,8 @@ export type TemplateCondition = string;
  * A component of a template specification.
  */
 export abstract class TemplateField implements Writable {
+    public readonly isWritable = true;
+
     /**
      * @param name Human and machine readable field identifier.
      * @param conditions Conditions that must be satisfied for a document
@@ -427,7 +431,7 @@ export class TemplateFieldMap extends TemplateField {
         name: string,
         conditions?: TemplateCondition[],
         public readonly entry?: TemplateField,
-        public readonly entries?: Iterable<[string, TemplateField]>,
+        public readonly entries?: { [key: string]: TemplateField },
     ) {
         super(name, conditions);
     }
@@ -439,20 +443,17 @@ export class TemplateFieldMap extends TemplateField {
      * @return New field.
      */
     public static read(source: object): TemplateFieldMap {
+        const entries = source["Entries"] || {};
         return new TemplateFieldMap(
             verify.isString(source["Name"]),
             verify.isArrayOrNothing(source["Conditions"]),
             TemplateField.read(source["Entry"]),
-            (source["Entries"] || []).map(entry => {
-                if (
-                    typeof entry[Symbol.iterator] !== "function" ||
-                    typeof entry[0] !== "string"
-                ) {
-                    throw new TypeError("Bad entry: " + JSON.stringify(entry));
-                }
-                return [entry[0], TemplateField.read(entry[1])];
-            }),
-        );
+            Object.getOwnPropertyNames(verify
+                .isNonArrayObjectOrNothing(entries) || {})
+                .reduce((result, key) => {
+                    result[key] = TemplateField.read(entries[key]);
+                    return result;
+                }, {}));
     }
 
     protected validateInner(path: string, entity: any): Violation[] {
