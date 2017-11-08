@@ -88,12 +88,12 @@ class DirectoryReaderLMDB implements DirectoryReader {
         protected readonly txn: lmdb.Txn,
     ) { }
 
-    public list(paths: string[]): Promise<DirectoryEntry[]> {
+    public list(paths: Iterable<string>): Promise<DirectoryEntry[]> {
         return new Promise((resolve, reject) => {
             try {
                 const result = new Array<DirectoryEntry>();
                 const cursor = new lmdb.Cursor(this.txn, this.dbi);
-                visitEachMatch(paths, cursor, () => {
+                visitEachMatch(Array.from(paths), cursor, () => {
                     cursor.getCurrentBinary((path, value) => {
                         result.push({ path, value });
                     });
@@ -112,7 +112,7 @@ class DirectoryWriterLMDB extends DirectoryReaderLMDB implements DirectoryWriter
         super(env, dbi, txn);
     }
 
-    public add(entries: DirectoryEntry[]): Promise<void> {
+    public add(entries: Iterable<DirectoryEntry>): Promise<void> {
         return new Promise((resolve, reject) => {
             try {
                 for (const entry of entries) {
@@ -133,11 +133,11 @@ class DirectoryWriterLMDB extends DirectoryReaderLMDB implements DirectoryWriter
         });
     }
 
-    public remove(paths: string[]): Promise<void> {
+    public remove(paths: Iterable<string>): Promise<void> {
         return new Promise((resolve, reject) => {
             try {
                 const cursor = new lmdb.Cursor(this.txn, this.dbi);
-                visitEachMatch(paths, cursor, () => {
+                visitEachMatch(Array.from(paths), cursor, () => {
                     cursor.del();
                 });
                 cursor.close();

@@ -80,7 +80,7 @@ export interface DirectoryReader {
      * @param paths An array of fully or partially qualified entry paths.
      * @return A list of entries.
      */
-    list(paths: string[]): Promise<DirectoryEntry[]>;
+    list(paths: Iterable<string>): Promise<DirectoryEntry[]>;
 }
 
 /**
@@ -97,7 +97,7 @@ export interface DirectoryWriter extends DirectoryReader {
      * @param entries Entries to add.
      * @return A promise resolved with nothing when the operation is completed.
      */
-    add(entries: DirectoryEntry[]): Promise<void>;
+    add(entries: Iterable<DirectoryEntry>): Promise<void>;
 
     /**
      * Removes all stored entries with paths matching those given.
@@ -110,5 +110,5 @@ export interface DirectoryWriter extends DirectoryReader {
      * @param paths An array of fully or partially qualified template paths.
      * @return A promise resolved with nothing when the operation is completed.
      */
-    remove(paths: string[]): Promise<void>;
+    remove(paths: Iterable<string>): Promise<void>;
 }
