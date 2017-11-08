@@ -389,13 +389,14 @@ export class TemplateFieldList extends TemplateField {
         }
         return entity
             .reduce((violations: Violation[], item, index) => {
+                const itemPath = path + "[" + index + "]";
                 if (this.item) {
                     violations.push(...this.item
-                        .validate(path, item, index, entity.length));
+                        .validate(itemPath, item, index, entity.length));
                 }
                 if (this.items && this.items[index]) {
                     violations.push(...this.items[index]
-                        .validate(path, item, index, entity.length)
+                        .validate(itemPath, item, index, entity.length)
                     );
                 }
                 return violations;
@@ -467,14 +468,14 @@ export class TemplateFieldMap extends TemplateField {
         return names
             .reduce((violations: Violation[], name) => {
                 const value = entity[name];
-                const itemPath = path + "." + name;
+                const entryPath = path + "." + name;
                 if (this.entry) {
                     violations.push(...this.entry
-                        .validate(path, value, name, names.length));
+                        .validate(entryPath, value, name, names.length));
                 }
                 if (this.entries && this.entries[name]) {
                     violations.push(...this.entries[name]
-                        .validate(path, value, name, names.length)
+                        .validate(entryPath, value, name, names.length)
                     );
                 }
                 return violations;

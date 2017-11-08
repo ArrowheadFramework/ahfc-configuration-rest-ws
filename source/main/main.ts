@@ -53,7 +53,7 @@ function start() {
                 handler: (params, headers) => {
                     // TODO: Authenticate user and give reference to system.
                     const system = new ConfigurationSystem(directory, null);
-                    if (params["template_names"]) {
+                    if (params["template_names"] !== undefined) {
                         const names = params["template_names"].split(",");
                         return system.store()
                             .listDocumentsByTemplateNames(names)

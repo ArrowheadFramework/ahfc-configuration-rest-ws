@@ -54,7 +54,7 @@ export class ConfigurationSystem {
                     add(writer, ".r", rules)
                         .then(() => writer.add(rules.map(rule => ({
                             path: prefixPath(".rt", rule.template),
-                            value: Buffer.from(prefixPath(".r", rule.name)),
+                            value: Buffer.from(rule.name),
                         })))));
             }
 
