@@ -7,28 +7,58 @@ import * as http from "./http";
 import * as process from "process";
 import { Settings } from "./Settings";
 
+let isDiscoverable: boolean;
 let serviceDiscovery;
 let serviceInstanceName;
 const serviceType = "_ahf-Configuration._http._tcp";
 
 // Application start routine.
 function start() {
+    const argv = process.argv.slice(2);
+    isDiscoverable = argv.find(arg => {
+        return arg === "--not-discoverable" || arg === "-d";
+    }) !== undefined;
+
     const appDataPath = Settings.resolveAppDataPath();
-    const config = Settings.fromFileAt(appDataPath + "/config.json");
+    const configPath = appDataPath + "/config.json";
+    const config = Settings.fromFileAt(configPath);
 
-    serviceDiscovery = new ahfc.ServiceDiscoveryDNSSD(config.dnssd);
-    serviceInstanceName = config.instanceName;
+    console.log(
+        "Arrowhead Configuration System %s\n" +
+        "  Configuration path: %s\n" +
+        "  Database path: %s\n" +
+        "  Endpoint to self: %s:%d\n" +
+        "  Instance name: %s\n" +
+        "  Discoverable: %s\n\n",
+        process.env.npm_package_version,
+        configPath,
+        config.databasePath,
+        config.endpoint,
+        config.port,
+        config.instanceName,
+        isDiscoverable ? "Yes" : "No");
 
-    serviceDiscovery.publish({
-        serviceType,
-        serviceName: serviceInstanceName,
-        endpoint: config.endpoint,
-        port: config.port,
-        metadata: {
-            path: "/",
-            version: "" + process.env.npm_package_version
-        }
-    }).then(() => {
+    let before: Promise<any>;
+    if (isDiscoverable) {
+        console.log("+ Registering with service registry at %s ...",
+            ((config.dnssd || {}).nameServers || "").join(", "));
+        serviceDiscovery = new ahfc.ServiceDiscoveryDNSSD(config.dnssd);
+        serviceInstanceName = config.instanceName;
+        before = serviceDiscovery.publish({
+            serviceType,
+            serviceName: serviceInstanceName,
+            endpoint: config.endpoint,
+            port: config.port,
+            metadata: {
+                path: "/",
+                version: "" + process.env.npm_package_version
+            }
+        }).then(() => console.log("+ Registered."));
+    } else {
+        before = Promise.resolve();
+    }
+
+    before.then(() => {
         const directory = new db.DirectoryLMDB(config.databasePath);
         new http.Server()
             // Document handlers.
@@ -262,10 +292,17 @@ function start() {
 
 // Application exit routine.
 function exit() {
-    serviceDiscovery.unpublish({
-        serviceType,
-        serviceName: serviceInstanceName
-    }).then(() => {
+    let after: Promise<any>;
+    if (isDiscoverable) {
+        after = serviceDiscovery.unpublish({
+            serviceType,
+            serviceName: serviceInstanceName
+        });
+    } else {
+        after = Promise.resolve();
+    }
+
+    after.then(() => {
         process.exit(0);
     }, error => {
         console.log(error);
