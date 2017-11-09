@@ -70,11 +70,13 @@ is specified in JSON. A full example is given below.
 ```
 
 If the service registry is a DNS server that is discovered automatically by a
-local DHCP service, or equivalent, then only the `dnssd.transactionKey` needs
-to be specified. Its `algorithm` and `fudge` properties need only be specified
-if the values in the above example, which should be the defaults, are not
-desired. The `secret` property must be specified in Base64 form. The other
-`dnssd` properties may be specified as required.
+local DHCP service, or equivalent, then only the `transactionKey` property
+inside the `dnssd` object needs to be specified. Its `algorithm` and `fudge`
+properties need only be specified if the values in the above example, which
+should be the defaults, are not desired. The `secret` property must be
+specified in Base64 form. The other `dnssd` properties may be specified as
+required. Note that `nameServers` must be a list of IPv4 or IPv6 addresses.
+Domain names may not be used.
 
 Unless running in standalone mode, `endpoint` must be specified, as there is
 currenly no mechanism for automatically resolving it. Lastly, `port` is set to
