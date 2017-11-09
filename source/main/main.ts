@@ -95,11 +95,19 @@ function start() {
                         const system = new ConfigurationSystem(directory, null);
                         return system.management()
                             .addDocuments(documents)
-                            .then(reports => ({
-                                code: http.Code.Created,
-                                reason: "Created",
-                                body: new apes.WritableArray(...reports),
-                            }));
+                            .then(reports => reports
+                                .reduce((sum, report) => {
+                                    return sum + report.violations.length;
+                                }, 0) === 0
+                                ? {
+                                    code: http.Code.Created,
+                                    reason: "Created",
+                                    body: new apes.WritableArray(...documents),
+                                } : {
+                                    code: http.Code.BadRequest,
+                                    reason: "Bad request",
+                                    body: new apes.WritableArray(...reports),
+                                });
                     } catch (exception) {
                         return Promise.resolve({
                             code: http.Code.BadRequest,
