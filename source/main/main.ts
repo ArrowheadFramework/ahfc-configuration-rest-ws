@@ -306,12 +306,14 @@ function exit() {
                 serviceType,
                 serviceName: serviceInstanceName
             }).then(() => console.log(`+ Unpublished: ` +
-                `${serviceInstanceName}.${serviceType}`)))));
+                `${serviceInstanceName}.${serviceType}`)))
+            , new Array<Promise<any>>()));
     } else {
         after = Promise.resolve();
     }
 
     after.then(() => {
+        console.log("+ Exit.")
         process.exit(0);
     }, error => {
         console.log(error);
@@ -327,6 +329,7 @@ function exit() {
             return;
         }
         didExit = true;
+        console.log();
         exit();
     }
 
