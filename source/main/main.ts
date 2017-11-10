@@ -10,7 +10,10 @@ import { Settings } from "./Settings";
 let isDiscoverable: boolean;
 let serviceDiscovery;
 let serviceInstanceName;
-const serviceType = "_ahf-Configuration._http._tcp";
+const serviceTypes = [
+    "_ahfc-ConfigurationManagement._http._tcp",
+    "_ahfc-ConfigurationStore._http._tcp"
+];
 
 // Application start routine.
 function start() {
@@ -44,16 +47,20 @@ function start() {
             ((config.dnssd || {}).nameServers || "").join(", "));
         serviceDiscovery = new ahfc.ServiceDiscoveryDNSSD(config.dnssd);
         serviceInstanceName = config.instanceName;
-        before = serviceDiscovery.publish({
-            serviceType,
-            serviceName: serviceInstanceName,
-            endpoint: config.endpoint,
-            port: config.port,
-            metadata: {
-                path: "/",
-                version: "" + process.env.npm_package_version
-            }
-        }).then(() => console.log("+ Registered."));
+
+        before = Promise.all(serviceTypes.reduce((promises, serviceType) =>
+            promises.concat(serviceDiscovery.publish({
+                serviceType,
+                serviceName: serviceInstanceName,
+                endpoint: config.endpoint,
+                port: config.port,
+                metadata: {
+                    path: "/",
+                    version: "" + process.env.npm_package_version
+                }
+            }).then(() => console.log(`+ Published: ` +
+                `${serviceInstanceName}.${serviceType}`)))
+            , new Array<Promise<any>>()));
     } else {
         before = Promise.resolve();
     }
@@ -294,10 +301,12 @@ function start() {
 function exit() {
     let after: Promise<any>;
     if (isDiscoverable) {
-        after = serviceDiscovery.unpublish({
-            serviceType,
-            serviceName: serviceInstanceName
-        });
+        after = Promise.all(serviceTypes.reduce((promises, serviceType) =>
+            promises.concat(serviceDiscovery.unpublish({
+                serviceType,
+                serviceName: serviceInstanceName
+            }).then(() => console.log(`+ Unpublished: ` +
+                `${serviceInstanceName}.${serviceType}`)))));
     } else {
         after = Promise.resolve();
     }
