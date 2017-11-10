@@ -32,7 +32,7 @@ function start() {
         "  Database path: %s\n" +
         "  Endpoint to self: %s:%d\n" +
         "  Instance name: %s\n" +
-        "  Discoverable: %s\n\n",
+        "  Discoverable: %s\n",
         process.env.npm_package_version,
         configPath,
         config.databasePath,
