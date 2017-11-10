@@ -389,7 +389,7 @@ export class TemplateFieldList extends TemplateField {
         }
         return entity
             .reduce((violations: Violation[], item, index) => {
-                const itemPath = path + "[" + index + "]";
+                const itemPath = (path ? (path + ".") : "") + index;
                 if (this.item) {
                     violations.push(...this.item
                         .validate(itemPath, item, index, entity.length));
@@ -468,7 +468,7 @@ export class TemplateFieldMap extends TemplateField {
         return names
             .reduce((violations: Violation[], name) => {
                 const value = entity[name];
-                const entryPath = path + "." + name;
+                const entryPath = (path ? (path + ".") : "") + name;
                 if (this.entry) {
                     violations.push(...this.entry
                         .validate(entryPath, value, name, names.length));
