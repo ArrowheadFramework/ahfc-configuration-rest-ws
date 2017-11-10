@@ -42,12 +42,13 @@ in [package.json][pajso].
 
 If the application is to run as part of an Arrowhead cluster, additional setup
 is required. In particular, the application configuration file must be
-modified. To determine the location of the configuration file, run the 
-application in standalone and read the console output. One of the first lines
-should contain `Configuration path:` followed by the path to the file.
+modified, and the `-d` flag omitted when invoking `npm start`. To determine the
+location of the configuration file, run the application in standalone mode and
+read the console output. One of the first lines should contain
+`Configuration path:` followed by the path to the configuration file.
 
 When the file has been located, open it with a text editor. Configuration data
-is specified in JSON. A full example is given below.
+is specified in JSON. A full configuration example is given below.
 
 ```json
 {
@@ -79,16 +80,17 @@ required. Note that `nameServers` must be a list of IPv4 or IPv6 addresses.
 Domain names may not be used.
 
 Unless running in standalone mode, `endpoint` must be specified, as there is
-currenly no mechanism for automatically resolving it. Lastly, `port` is set to
-`8080` if not given, and `instanceName` is set to a random string of characters
-unless specified.
+currenly no mechanism for automatically resolving it. The `endpoint` is a
+domain name through which this system is reachable, already known by the
+service registry. Lastly, `port` is set to `8080` if not given, and
+`instanceName` is set to a random string of characters, unless specified.
 
 ## Demo
 
 [An API demo][demop] is available as a [Postman][postm] collection. Download
 the Postman client, import the file, and try the example API calls. Note that
-the configuration system must be running for the Postman collection requests to
-work as intended.
+the configuration system must be running in standalone mode for the Postman
+collection requests to work as intended.
 
 ## Contributing
 
