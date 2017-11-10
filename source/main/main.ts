@@ -20,7 +20,7 @@ function start() {
     const argv = process.argv.slice(2);
     isDiscoverable = argv.find(arg => {
         return arg === "--not-discoverable" || arg === "-d";
-    }) !== undefined;
+    }) === undefined;
 
     const appDataPath = Settings.resolveAppDataPath();
     const configPath = appDataPath + "/config.json";
