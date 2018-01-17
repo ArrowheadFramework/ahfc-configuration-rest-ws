@@ -29,7 +29,7 @@ a terminal emulator, and enter the below commands:
 
 ```bash
 $ npm install
-$ npm start -d
+$ npm start -- -d
 ```
 
 The above commands may vary slightly if not using Bash, Z, or other related
@@ -88,9 +88,10 @@ service registry. Lastly, `port` is set to `8080` if not given, and
 ## Demo
 
 [An API demo][demop] is available as a [Postman][postm] collection. Download
-the Postman client, import the file, and try the example API calls. Note that
-the configuration system must be running in standalone mode for the Postman
-collection requests to work as intended.
+the Postman client, import the file, create and select a postman environment
+with a `host` variable set to `localhost`, and try the example API calls. Note
+that the configuration system must be running in standalone mode on the same
+machine for the Postman collection requests to work as intended.
 
 ## Contributing
 
