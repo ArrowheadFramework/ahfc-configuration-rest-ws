@@ -91,9 +91,9 @@ class Application {
                     return f(params, headers, system, body);
 
                 } catch (error) {
+                    console.log(error);
                     return Promise.resolve({
-                        code: http.Code["Bad Request"],
-                        body: new apes.WritableError(error.message)
+                        code: http.Code["Internal Server Error"]
                     });
                 }
             };
