@@ -120,7 +120,10 @@ class Application {
                             .listDocumentsByTemplateNames(names)
                             .then(documents => ({
                                 code: http.Code["OK"],
-                                body: new apes.WritableArray(...documents),
+                                body: documents.reduce((acc, document) => {
+                                    acc.push(document.body);
+                                    return acc;
+                                }, new apes.WritableArray()),
                             }));
                     }
                     const names = (params["document_names"] || "").split(",");
