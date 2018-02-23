@@ -7,72 +7,89 @@ import * as http from "./http";
 import * as process from "process";
 import { Settings } from "./Settings";
 
-let isDiscoverable: boolean;
-let serviceDiscovery;
-let serviceInstanceName;
-const serviceTypes = [
-    "_ahfc-ConfigurationManagement._http._tcp",
-    "_ahfc-ConfigurationStore._http._tcp"
-];
+/**
+ * Application main class.
+ */
+class Application {
+    private static readonly serviceTypes: string[] = [
+        "_ahfc-ConfigurationManagement._http._tcp",
+        "_ahfc-ConfigurationStore._http._tcp"
+    ];
 
-// Application start routine.
-function start() {
-    const argv = process.argv.slice(2);
-    isDiscoverable = argv.find(arg => {
-        return arg === "--not-discoverable" || arg === "-d";
-    }) === undefined;
+    private readonly isDiscoverable: boolean;
 
-    const appDataPath = Settings.resolveAppDataPath();
-    const configPath = appDataPath + "/config.json";
-    const config = Settings.fromFileAt(configPath);
+    private serviceDiscovery: ahfc.ServiceDiscoveryDNSSD;
+    private serviceInstanceName: string;
 
-    console.log(
-        "Arrowhead Configuration System %s\n" +
-        "  Configuration path: %s\n" +
-        "  Database path: %s\n" +
-        "  Endpoint to self: %s:%d\n" +
-        "  Instance name: %s\n" +
-        "  Discoverable: %s\n",
-        process.env.npm_package_version,
-        configPath,
-        config.databasePath,
-        config.endpoint,
-        config.port,
-        config.instanceName,
-        isDiscoverable ? "Yes" : "No");
-
-    let before: Promise<any>;
-    if (isDiscoverable) {
-        console.log("+ Registering with service registry at %s ...",
-            ((config.dnssd || {}).nameServers || []).join(", "));
-        serviceDiscovery = new ahfc.ServiceDiscoveryDNSSD(config.dnssd);
-        serviceInstanceName = config.instanceName;
-
-        before = Promise.all(serviceTypes.reduce((promises, serviceType) =>
-            promises.concat(serviceDiscovery.publish({
-                serviceType,
-                serviceName: serviceInstanceName,
-                endpoint: config.endpoint,
-                port: config.port,
-                metadata: {
-                    path: "/",
-                    version: "" + process.env.npm_package_version
-                }
-            }).then(() => console.log(`+ Published: ` +
-                `${serviceInstanceName}.${serviceType}`)))
-            , new Array<Promise<any>>()));
-    } else {
-        before = Promise.resolve();
+    /**
+     * Creates new application.
+     * 
+     * @param argv Application command line arguments.
+     */
+    constructor(argv = process.argv.slice(2)) {
+        this.isDiscoverable = argv.find(arg => {
+            return arg === "--not-discoverable" || arg === "-d";
+        }) === undefined;
     }
 
-    before.then(() => {
-        const directory = new db.DirectoryLMDB(config.databasePath);
+    /// Application start routine.
+    public start(): Promise<void> {
+        try {
+            const appDataPath = Settings.resolveAppDataPath();
+            const settingsPath = appDataPath + "/config.json";
+            const settings = Settings.fromFileAt(settingsPath);
+            const version = process.env.npm_package_version;
+
+            console.log(
+                `Arrowhead Configuration System ${version}\n` +
+                `  Configuration path: ${settingsPath}\n` +
+                `  Database path: ${settings.databasePath}\n` +
+                `  Endpoint to self: ${settings.endpoint}:${settings.port}\n` +
+                `  Instance name: ${settings.instanceName}\n` +
+                `  Discoverable: ${this.isDiscoverable ? "Yes" : "No"}\n`);
+
+            return this.registerService(settings)
+                .then(() => this.loadHTTPHandlers(settings));
+        } catch (error) {
+            return Promise.reject(error);
+        }
+    }
+
+    private registerService(settings: Settings): Promise<void> {
+        if (!this.isDiscoverable) {
+            return Promise.resolve();
+        }
+        console.log("+ Registering with service registry at %s ...",
+            ((settings.dnssd || {}).nameServers || []).join(", "));
+        this.serviceDiscovery = new ahfc.ServiceDiscoveryDNSSD(settings.dnssd);
+        this.serviceInstanceName = settings.instanceName;
+
+        return Promise.all(Application.serviceTypes
+            .reduce((promises, serviceType) =>
+                promises.concat(this.serviceDiscovery.publish({
+                    serviceType,
+                    serviceName: this.serviceInstanceName,
+                    endpoint: settings.endpoint,
+                    port: settings.port,
+                    metadata: {
+                        path: "/",
+                        version: "" + process.env.npm_package_version
+                    }
+                }).then(() => console.log(
+                    `+ Published: ${this.serviceInstanceName}.${serviceType}`)))
+                , new Array<Promise<any>>()))
+            .then(() => undefined);
+    }
+
+    private loadHTTPHandlers(settings: Settings) {
+        const directory = new db.DirectoryLMDB(settings.databasePath);
         const authenticate = (f) => {
             return (params, headers, body) => {
                 // TODO: Authenticate user and give reference to system.
                 const system = new ConfigurationSystem(directory, null);
                 try {
                     return f(params, headers, system, body);
+
                 } catch (error) {
                     return Promise.resolve({
                         code: http.Code["Bad request"],
@@ -241,40 +258,32 @@ function start() {
                 }),
             })
 
-            .listen(config.port);
-    }, error => {
-        console.log("Failed to setup Arrowhead Configuration System. Reason:");
-        console.log(error);
-        process.exit(1);
-    });
-}
-
-// Application exit routine.
-function exit() {
-    let after: Promise<any>;
-    if (isDiscoverable) {
-        after = Promise.all(serviceTypes.reduce((promises, serviceType) =>
-            promises.concat(serviceDiscovery.unpublish({
-                serviceType,
-                serviceName: serviceInstanceName
-            }).then(() => console.log(`+ Unpublished: ` +
-                `${serviceInstanceName}.${serviceType}`)))
-            , new Array<Promise<any>>()));
-    } else {
-        after = Promise.resolve();
+            .listen(settings.port);
     }
 
-    after.then(() => {
-        console.log("+ Exit.")
-        process.exit(0);
-    }, error => {
-        console.log(error);
-        process.exit(2);
-    });
+    /// Application exit routine.
+    public exit(): Promise<void> {
+        let after: Promise<any>;
+        if (this.isDiscoverable) {
+            after = Promise.all(Application.serviceTypes
+                .reduce((promises, serviceType) =>
+                    promises.concat(this.serviceDiscovery.unpublish({
+                        serviceType,
+                        serviceName: this.serviceInstanceName
+                    }).then(() => console.log(
+                        `+ Unpublished: ${this.serviceInstanceName}.${serviceType}`
+                    ))), new Array<Promise<any>>()));
+        } else {
+            after = Promise.resolve();
+        }
+        return after.then(() => console.log("+ Exit."));
+    }
 }
 
-// Bootstrapping routine.
+// Bootstrap.
 {
+    const application = new Application();
+
     let didExit = false;
     const onExit = () => {
         if (didExit) {
@@ -282,17 +291,25 @@ function exit() {
         }
         didExit = true;
         console.log();
-        exit();
+        application.exit()
+            .then(() => process.exit(0))
+            .catch(error => {
+                console.log("Orderly exit failed.");
+                console.log("Reason:");
+                console.log(error);
+                process.exit(2);
+            });
     }
 
     process.on("SIGINT", onExit);
     process.on("SIGTERM", onExit);
     process.on("SIGHUP", onExit);
 
-    try {
-        start();
-    } catch (error) {
-        console.log("Failed to start Arrowhead Configuration System. Reason:");
-        console.log(error);
-    }
+    application.start()
+        .catch(error => {
+            console.log("Failed to start Arrowhead Configuration System.");
+            console.log("Reason:");
+            console.log(error);
+            process.exit(1);
+        });
 }
