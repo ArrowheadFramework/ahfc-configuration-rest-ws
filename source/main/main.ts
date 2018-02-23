@@ -78,10 +78,7 @@ function start() {
                     const names = (params["document_names"] || "").split(",");
                     return system.management()
                         .removeDocuments(names)
-                        .then(() => ({
-                            code: http.Code.NoContent,
-                            reason: "No content"
-                        }));
+                        .then(() => ({code: http.Code["No Content"]}));
                 },
             })
             .handle({
@@ -95,8 +92,7 @@ function start() {
                         return system.store()
                             .listDocumentsByTemplateNames(names)
                             .then(documents => ({
-                                code: http.Code.OK,
-                                reason: "OK",
+                                code: http.Code["OK"],
                                 body: new apes.WritableArray(...documents),
                             }));
                     }
@@ -106,8 +102,7 @@ function start() {
                     return system.management()
                         .listDocuments(names)
                         .then(documents => ({
-                            code: http.Code.OK,
-                            reason: "OK",
+                            code: http.Code["OK"],
                             body: new apes.WritableArray(...documents),
                         }));
                 },
@@ -118,8 +113,7 @@ function start() {
                 handler: (params, headers, body) => {
                     if (!Array.isArray(body)) {
                         return Promise.resolve({
-                            code: http.Code.BadRequest,
-                            reason: "Bad request",
+                            code: http.Code["Bad request"],
                             body: new apes.WritableError("Not an array."),
                         });
                     }
@@ -137,18 +131,15 @@ function start() {
                                     return sum + report.violations.length;
                                 }, 0) === 0
                                 ? {
-                                    code: http.Code.Created,
-                                    reason: "Created",
+                                    code: http.Code["Created"],
                                     body: new apes.WritableArray(...documents),
                                 } : {
-                                    code: http.Code.BadRequest,
-                                    reason: "Bad request",
+                                    code: http.Code["Bad request"],
                                     body: new apes.WritableArray(...reports),
                                 });
                     } catch (exception) {
                         return Promise.resolve({
-                            code: http.Code.BadRequest,
-                            reason: "Bad request",
+                            code: http.Code["Bad request"],
                             body: new apes.WritableError(exception.message)
                         });
                     }
@@ -165,10 +156,7 @@ function start() {
                     const names = (params["rule_names"] || "").split(",");
                     return system.management()
                         .removeRules(names)
-                        .then(() => ({
-                            code: http.Code.NoContent,
-                            reason: "No content"
-                        }));
+                        .then(() => ({code: http.Code["No content"]}));
                 },
             })
             .handle({
@@ -181,8 +169,7 @@ function start() {
                     return system.management()
                         .listRules(names)
                         .then(rules => ({
-                            code: http.Code.OK,
-                            reason: "OK",
+                            code: http.Code["OK"],
                             body: new apes.WritableArray(...rules),
                         }));
                 },
@@ -193,8 +180,7 @@ function start() {
                 handler: (params, headers, body) => {
                     if (!Array.isArray(body)) {
                         return Promise.resolve({
-                            code: http.Code.BadRequest,
-                            reason: "Bad request",
+                            code: http.Code["Bad request"],
                             body: new apes.WritableError("Not an array."),
                         });
                     }
@@ -208,14 +194,12 @@ function start() {
                         return system.management()
                             .addRules(rules)
                             .then(() => ({
-                                code: http.Code.Created,
-                                reason: "Created",
+                                code: http.Code["Created"],
                                 body: new apes.WritableArray(...rules),
                             }));
                     } catch (exception) {
                         return Promise.resolve({
-                            code: http.Code.BadRequest,
-                            reason: "Bad request",
+                            code: http.Code["Bad request"],
                             body: new apes.WritableError(exception.message)
                         });
                     }
@@ -232,10 +216,7 @@ function start() {
                     const names = (params["template_names"] || "").split(",");
                     return system.management()
                         .removeTemplates(names)
-                        .then(() => ({
-                            code: http.Code.NoContent,
-                            reason: "No content"
-                        }));
+                        .then(() => ({code: http.Code["No content"]}));
                 },
             })
             .handle({
@@ -248,8 +229,7 @@ function start() {
                     return system.management()
                         .listTemplates(names)
                         .then(templates => ({
-                            code: http.Code.OK,
-                            reason: "OK",
+                            code: http.Code["OK"],
                             body: new apes.WritableArray(...templates),
                         }));
                 },
@@ -260,8 +240,7 @@ function start() {
                 handler: (params, headers, body) => {
                     if (!Array.isArray(body)) {
                         return Promise.resolve({
-                            code: http.Code.BadRequest,
-                            reason: "Bad request",
+                            code: http.Code["Bad request"],
                             body: new apes.WritableError("Not an array."),
                         });
                     }
@@ -275,14 +254,12 @@ function start() {
                         return system.management()
                             .addTemplates(templates)
                             .then(() => ({
-                                code: http.Code.Created,
-                                reason: "Created",
+                                code: http.Code["Created"],
                                 body: new apes.WritableArray(...templates),
                             }));
                     } catch (exception) {
                         return Promise.resolve({
-                            code: http.Code.BadRequest,
-                            reason: "Bad request",
+                            code: http.Code["Bad request"],
                             body: new apes.WritableError(exception.message)
                         });
                     }

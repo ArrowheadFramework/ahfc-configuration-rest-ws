@@ -8,53 +8,53 @@ import * as url from "url";
  * An HTTP response code.
  */
 export enum Code {
-    Continue = 100,
-    SwitchingProtocols = 101,
+    "Continue" = 100,
+    "Switching Protocols" = 101,
 
-    OK = 200,
-    Created = 201,
-    Accepted = 202,
-    NonAuthoritativeInformation = 203,
-    NoContent = 204,
-    ResetContent = 205,
-    PartialContent = 206,
+    "OK" = 200,
+    "Created" = 201,
+    "Accepted" = 202,
+    "Non-Authoritative Information" = 203,
+    "No Content" = 204,
+    "Reset Content" = 205,
+    "Partial Content" = 206,
 
-    MultipleChoices = 300,
-    MovedPermanently = 301,
-    Found = 302,
-    SeeOther = 303,
-    NotModified = 304,
-    UseProxy = 305,
-    TemporaryRedirect = 307,
-    PermanentRedirect = 308,
+    "Multiple Choices" = 300,
+    "Moved Permanently" = 301,
+    "Found" = 302,
+    "See Other" = 303,
+    "Not Modified" = 304,
+    "Use Proxy" = 305,
+    "Temporary Redirect" = 307,
+    "Permanent Redirect" = 308,
 
-    BadRequest = 400,
-    Unauthorized = 401,
-    PaymentRequired = 402,
-    Forbidden = 403,
-    NotFound = 404,
-    MethodNotAllowed = 405,
-    NotAcceptable = 406,
-    ProxyAuthenticationRequired = 407,
-    RequestTimeout = 408,
-    Conflict = 409,
-    Gone = 410,
-    LengthRequired = 411,
-    PreconditionFailed = 412,
-    PayloadTooLarge = 413,
-    RequestURITooLong = 414,
-    UnsupportedMediaType = 415,
-    RequestedRangeNotSatisfiable = 416,
-    ExpectationFailed = 417,
-    ImaTeapot = 418,
+    "Bad Request" = 400,
+    "Unauthorized" = 401,
+    "Payment Required" = 402,
+    "Forbidden" = 403,
+    "Not Found" = 404,
+    "Method Not Allowed" = 405,
+    "Not Acceptable" = 406,
+    "Proxy Authentication Required" = 407,
+    "Request Timeout" = 408,
+    "Conflict" = 409,
+    "Gone" = 410,
+    "Length Required" = 411,
+    "Precondition Failed" = 412,
+    "Payload Too Large" = 413,
+    "Request URI Too Long" = 414,
+    "Unsupported Media Type" = 415,
+    "Requested Range Not Satisfiable" = 416,
+    "Expectation Failed" = 417,
+    "I'm a Teapot" = 418,
 
-    InternalServerError = 500,
-    NotImplemented = 501,
-    BadGateway = 502,
-    ServiceUnavailable = 503,
-    GatewayTimeout = 504,
-    HTTPVersionNotSupported = 505,
-    BandwidthLimitExceeded = 509,
+    "Internal Server Error" = 500,
+    "Not Implemented" = 501,
+    "Bad Gateway" = 502,
+    "Service Unavailable" = 503,
+    "Gateway Timeout" = 504,
+    "HTTP Version Not Supported" = 505,
+    "Bandwidth Limit Exceeded" = 509,
 }
 
 /**
@@ -88,7 +88,7 @@ export interface Request {
  */
 export interface Response {
     readonly code: Code;
-    readonly reason: string;
+    readonly reason?: string;
     readonly headers?: { [name: string]: string };
     readonly body?: apes.Writable;
 }
@@ -153,10 +153,7 @@ export class Server {
             if (contentType.length > 0) {
                 const read = apes.MIME.decoderFor(contentType);
                 if (!read) {
-                    respond(accept, out, {
-                        code: Code.UnsupportedMediaType,
-                        reason: "Unsupported Media Type " + contentType
-                    });
+                    respond(accept, out, {code: Code["Unsupported Media Type"]});
                     return;
                 }
                 routePromise = read(request).then(body => {
@@ -169,10 +166,7 @@ export class Server {
             routePromise.then(
                 response => respond(accept, out, response),
                 error => {
-                    respond(accept, out, {
-                        code: Code.InternalServerError,
-                        reason: "Internal Server Error",
-                    });
+                    respond(accept, out, {code: Code["Internal Server Error"]});
                     console.log(error);
                 });
         });
@@ -197,7 +191,7 @@ export class Server {
                 }
             }
             out.statusCode = response.code;
-            out.statusMessage = response.reason;
+            out.statusMessage = response.reason || Code[response.code];
             if (response.headers) {
                 Object.getOwnPropertyNames(response.headers).forEach(name => {
                     const value = response.headers[name];
@@ -216,10 +210,7 @@ export class Server {
         const key = toRouteMapKey(request.method, request.path);
         const route = this.routeMap.get(key);
         if (!route) {
-            return Promise.resolve({
-                code: Code.NotFound,
-                reason: "Not found"
-            } as Response);
+            return Promise.resolve({code: Code["Not found"]} as Response);
         }
         return route.handler(
             request.parameters,
