@@ -1,6 +1,6 @@
 {
 	"info": {
-		"name": "Arrowhead Configuration System",
+		"name": "Arrowhead Configuration",
 		"_postman_id": "c8bcfb68-63a9-abde-499c-d5bf6bd1443e",
 		"description": "These are examples of all kinds of HTTP requests that may be sent to a running Arrowhead Configuration System.\n\nThe system deals with 3 kinds of primary types, namely _templates_, _documents_, and _rules_. Templates determine how documents are allowed to be structured, and rules determine how documents are provided in response to `ListDocumentsByTemplateNames`. The documents are used to represent whatever configuration data the system is to host.\n\n# Using the Examples\n\nBefore a document can be added, there has to be a template created documents refer to. Before rules can be added, there has to be documents and templates to refer to.\n\nIn some cases, there may be of interest to see what happens when a query fails. For this reason, some of the examples define faulty queries.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -96,117 +96,7 @@
 			"response": []
 		},
 		{
-			"name": "AddRules (1)",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "[\n\t{\n\t\t\"RuleName\": \"eu.arrowhead.example.rules.PumpA1X1\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA1A\",\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX1\",\n\t\t\"Priority\": 0,\n\t\t\"ServiceName\": \"\"\n\t},\n\t{\n\t\t\"RuleName\": \"eu.arrowhead.example.rules.PumpA1X2\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA1B\",\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX1\",\n\t\t\"Priority\": 10,\n\t\t\"ServiceName\": \"\"\n    },\n    {\n    \t\"RuleName\": \"eu.arrowhead.example.rules.PumpA2X1\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA2A\",\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX2\",\n\t\t\"Priority\": 0,\n\t\t\"ServiceName\": \"\"\n    }\n]"
-				},
-				"url": {
-					"raw": "{{host}}/rules",
-					"host": [
-						"{{host}}"
-					],
-					"path": [
-						"rules"
-					]
-				},
-				"description": "`Service: ConfigurationManagement`\n\nAdds 3 new rules. Any existing rules with the same names are replaced. The same list of objects is provided back in the response.\n\nNote that two of the rules refer to the same template, but different documents. This means that when a relevant `ListDocumentsByTemplateNames` call is made, only the document referred to by the rule with higher priority is provided.\n\nPlease refer to the Arrowhead Configuration System (Portable Semantics) documentation for more details on how to specify rules."
-			},
-			"response": []
-		},
-		{
-			"name": "AddRules (2)",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"value": "application/json"
-					},
-					{
-						"key": "Accept",
-						"value": "application/apes+xml"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "[\n\t{\n\t\t\"RuleName\": \"eu.arrowhead.example.rules.PumpA1X1\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA1A\",\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX1\",\n\t\t\"Priority\": 20,\n\t\t\"ServiceName\": \"\"\n\t}\n]"
-				},
-				"url": {
-					"raw": "{{host}}/rules",
-					"host": [
-						"{{host}}"
-					],
-					"path": [
-						"rules"
-					]
-				},
-				"description": "`Service: ConfigurationManagement`\n\nAdd or replaces 1 rule. The same list of objects is provided back in the response, in this case encoded using `application/apes+xml`. The response encoding is determined by the provided `Accept` header.\n\nThis request replaces the first rule in `AddRules (1)`, only changing its priority to 20, which is higher than that of the second rule added in `AddRules (2)`.\n\nPlease refer to the Arrowhead Configuration System (Portable Semantics) documentation for more details on how to specify rules."
-			},
-			"response": []
-		},
-		{
-			"name": "ListRules",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"body": {},
-				"url": {
-					"raw": "{{host}}/rules?rule_names=eu.arrowhead.example.",
-					"host": [
-						"{{host}}"
-					],
-					"path": [
-						"rules"
-					],
-					"query": [
-						{
-							"key": "rule_names",
-							"value": "eu.arrowhead.example.",
-							"equals": true
-						}
-					]
-				},
-				"description": "`Service: ConfigurationManagement`\n\nLists all available rules with a rule name that contains the leading labels `eu.arrowhead.example.`, which happens to be all of them added in `AddRules`. Note that the trailing dot is used to signify that all rules with the same leading labels are desired, rather an exact match."
-			},
-			"response": []
-		},
-		{
-			"name": "RemoveRules",
-			"request": {
-				"method": "DELETE",
-				"header": [],
-				"body": {},
-				"url": {
-					"raw": "{{host}}/rules?rule_names=eu.arrowhead.example.rules.PumpA1X1",
-					"host": [
-						"{{host}}"
-					],
-					"path": [
-						"rules"
-					],
-					"query": [
-						{
-							"key": "rule_names",
-							"value": "eu.arrowhead.example.rules.PumpA1X1",
-							"equals": true
-						}
-					]
-				},
-				"description": "`Service: ConfigurationManagement`\n\nRemoves all rules with matching names. The `rule_names` parameter may accept multiple names if delimited by `,`. Name matching is performed in the same way as explained for `ListRules`."
-			},
-			"response": []
-		},
-		{
-			"name": "AddDocuments (1)",
+			"name": "AddDocuments (Valid)",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -233,7 +123,7 @@
 			"response": []
 		},
 		{
-			"name": "AddDocuments (2)",
+			"name": "AddDocuments (Invalid)",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -260,7 +150,34 @@
 			"response": []
 		},
 		{
-			"name": "ListDocuments",
+			"name": "AddDocuments (Unvalidated)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX1\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA1A\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"TURQUOISE\",\n\t\t\t\"Preassure\": 2.3,\n\t\t\t\"Speed\": 9.3\n\t\t}\n\t},\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX1\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA1B\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"BLUE\",\n\t\t\t\"Preassure\": 9000,\n\t\t\t\"Speed\": 7\n\t\t}\n\t},\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX2\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA2A\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"GREEN\",\n\t\t\t\"Preassure\": 12.3,\n\t\t\t\"Speed\": -12\n\t\t}\n\t}\n]"
+				},
+				"url": {
+					"raw": "{{host}}/documents",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"documents"
+					]
+				},
+				"description": "`Service: ConfigurationManagement`\n\nAttempts to add 3 new invalid documents. A list of report objects is provided in the response.\n\nPlease refer to the Arrowhead Configuration System (Portable Semantics) documentation for more details on how to specify documents."
+			},
+			"response": []
+		},
+		{
+			"name": "ListDocuments (All)",
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -286,13 +203,13 @@
 			"response": []
 		},
 		{
-			"name": "ListDocumentsByTemplateNames",
+			"name": "ListDocuments (Pumps only)",
 			"request": {
 				"method": "GET",
 				"header": [],
 				"body": {},
 				"url": {
-					"raw": "{{host}}/documents?template_names=eu.arrowhead.example.PumpX1",
+					"raw": "{{host}}/documents?document_names=eu.",
 					"host": [
 						"{{host}}"
 					],
@@ -301,13 +218,70 @@
 					],
 					"query": [
 						{
-							"key": "template_names",
-							"value": "eu.arrowhead.example.PumpX1",
+							"key": "document_names",
+							"value": "eu.",
 							"equals": true
 						}
 					]
 				},
-				"description": "`Service: ConfigurationStore`\n\nAcquires a list of documents from the names of the templates used to verify their correctness. This is how non-adminstrating services are expected to request their configuration documents.\n\nThe `template_names` parameter takes a `,`-delimited string of either partially or fully qualified template names. Partially qualified names must end with a `.`, or it is treated as fully qualified."
+				"description": "`Service: ConfigurationManagement`\n\nLists all available documents with a document name that contains the leading label `eu.`, which happens to be all of them added in `AddDocuments (1)`. Note that the trailing dot is used to signify that all documents with the same leading labels are desired, rather an exact match."
+			},
+			"response": []
+		},
+		{
+			"name": "ListDocuments (Valves only, inline)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{host}}/documents?document_names=eu.arrowhead.example.valves.&inline=true",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"documents"
+					],
+					"query": [
+						{
+							"key": "document_names",
+							"value": "eu.arrowhead.example.valves.",
+							"equals": true
+						},
+						{
+							"key": "inline",
+							"value": "true",
+							"equals": true
+						}
+					]
+				},
+				"description": "`Service: ConfigurationManagement`\n\nLists all available documents with a document name that contains the leading label `eu.`, which happens to be all of them added in `AddDocuments (1)`. Note that the trailing dot is used to signify that all documents with the same leading labels are desired, rather an exact match."
+			},
+			"response": []
+		},
+		{
+			"name": "RemoveDocuments",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {},
+				"url": {
+					"raw": "{{host}}/templates?template_names=eu.arrowhead.example.PumpX3",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"templates"
+					],
+					"query": [
+						{
+							"key": "template_names",
+							"value": "eu.arrowhead.example.PumpX3",
+							"equals": true
+						}
+					]
+				},
+				"description": "`Service: ConfigurationManagement`\n\nRemoves all templates with matching names. The `template_names` parameter may accept multiple names if delimited by `,`. Name matching is performed in the same way as explained for `ListTemplates`."
 			},
 			"response": []
 		}
