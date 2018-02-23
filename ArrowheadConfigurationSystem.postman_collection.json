@@ -18,7 +18,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "[\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX1\",\n\t\t\"Body\": {\n\t\t\t\"Name\": \"PumpX1\",\n\t\t\t\"Type\": \"Map\",\n\t\t\t\"Entries\": {\n\t\t\t\t\"Tag\": {\n\t\t\t\t\t\"Name\": \"TagX1\",\n\t\t\t\t\t\"Type\": \"Text\",\n\t\t\t\t\t\"Conditions\": [\n\t\t\t\t\t\t\"(x) => x === 'BLUE' || x === 'MAGENTA' || x === 'RED'\"\n\t\t\t\t\t]\n\t\t\t\t},\n\t\t\t\t\"Preassure\": {\n\t\t\t\t\t\"Name\": \"PreassureX1\",\n\t\t\t\t\t\"Type\": \"Number\",\n\t\t\t\t\t\"Conditions\": [\n\t\t\t\t\t\t\"(x) => x > 0.0 && x <= 12.5\"\n\t\t\t\t\t]\n\t\t\t\t},\n\t\t\t\t\"Speed\": {\n\t\t\t\t\t\"Name\": \"SpeedX1\",\n\t\t\t\t\t\"Type\": \"Number\",\n\t\t\t\t\t\"Conditions\": [\n\t\t\t\t\t\t\"(x) => x >= 0.0 && x <= 10.0\"\t\n\t\t\t\t\t]\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t},\n    {\n        \"TemplateName\": \"eu.arrowhead.example.PumpX2\",\n        \"Body\": {\n            \"Name\": \"PumpX2\",\n            \"Type\": \"Map\",\n            \"Entries\": {\n                \"Tag\": {\n                    \"Name\": \"TagX2\",\n                    \"Type\": \"Text\",\n                    \"Conditions\": [\n                        \"(x) => x === 'RED' || x === 'YELLOW' || x === 'GREEN'\"\n                    ]\n                },\n                \"Preassure\": {\n                    \"Name\": \"PreassureX2\",\n                    \"Type\": \"Number\",\n                    \"Conditions\": [\n                        \"(x) => x > 0.0 && x <= 47.6\"\n                    ]\n                },\n                \"Speed\": {\n                    \"Name\": \"SpeedX2\",\n                    \"Type\": \"Number\",\n                    \"Conditions\": [\n                        \"(x) => x >= 0.0 && x <= 1.0\"\n                    ]\n                }\n            }\n        }\n    },\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX3\",\n\t\t\"Body\": {\n\t\t\t\"Name\": \"PumpX3\",\n\t\t\t\"Type\": \"Map\",\n\t\t\t\"Entries\": {\n\t\t\t\t\"Speed\": {\n\t\t\t\t\t\"Name\": \"SpeedX3\",\n\t\t\t\t\t\"Type\": \"Number\",\n\t\t\t\t\t\"Conditions\": [\n\t\t\t\t\t\t\"(x) => x >= 0.0 && x <= 12.0\"\t\n\t\t\t\t\t]\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n]"
+					"raw": "[\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.pumps.TemplateAX\",\n\t\t\"Body\": {\n\t\t\t\"Name\": \"PumpX1\",\n\t\t\t\"Type\": \"Map\",\n\t\t\t\"Entries\": {\n\t\t\t\t\"Tag\": {\n\t\t\t\t\t\"Name\": \"TagX1\",\n\t\t\t\t\t\"Type\": \"Text\",\n\t\t\t\t\t\"Conditions\": [\n\t\t\t\t\t\t\"(x) => x === 'BLUE' || x === 'MAGENTA' || x === 'RED'\"\n\t\t\t\t\t]\n\t\t\t\t},\n\t\t\t\t\"Preassure\": {\n\t\t\t\t\t\"Name\": \"PreassureX1\",\n\t\t\t\t\t\"Type\": \"Number\",\n\t\t\t\t\t\"Conditions\": [\n\t\t\t\t\t\t\"(x) => x > 0.0 && x <= 12.5\"\n\t\t\t\t\t]\n\t\t\t\t},\n\t\t\t\t\"Speed\": {\n\t\t\t\t\t\"Name\": \"SpeedX1\",\n\t\t\t\t\t\"Type\": \"Number\",\n\t\t\t\t\t\"Conditions\": [\n\t\t\t\t\t\t\"(x) => x >= 0.0 && x <= 10.0\"\t\n\t\t\t\t\t]\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t},\n    {\n        \"TemplateName\": \"eu.arrowhead.example.pumps.TemplateBX\",\n        \"Body\": {\n            \"Name\": \"PumpX2\",\n            \"Type\": \"Map\",\n            \"Entries\": {\n                \"Tag\": {\n                    \"Name\": \"TagX2\",\n                    \"Type\": \"Text\",\n                    \"Conditions\": [\n                        \"(x) => x === 'RED' || x === 'YELLOW' || x === 'GREEN'\"\n                    ]\n                },\n                \"Preassure\": {\n                    \"Name\": \"PreassureX2\",\n                    \"Type\": \"Number\",\n                    \"Conditions\": [\n                        \"(x) => x > 0.0 && x <= 47.6\"\n                    ]\n                },\n                \"Speed\": {\n                    \"Name\": \"SpeedX2\",\n                    \"Type\": \"Number\",\n                    \"Conditions\": [\n                        \"(x) => x >= 0.0 && x <= 1.0\"\n                    ]\n                }\n            }\n        }\n    },\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.pumps.TemplateCX\",\n\t\t\"Body\": {\n\t\t\t\"Name\": \"PumpX3\",\n\t\t\t\"Type\": \"Map\",\n\t\t\t\"Entries\": {\n\t\t\t\t\"Speed\": {\n\t\t\t\t\t\"Name\": \"SpeedX3\",\n\t\t\t\t\t\"Type\": \"Number\",\n\t\t\t\t\t\"Conditions\": [\n\t\t\t\t\t\t\"(x) => x >= 0.0 && x <= 12.0\"\t\n\t\t\t\t\t]\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t}\n]"
 				},
 				"url": {
 					"raw": "{{host}}/templates",
@@ -50,7 +50,7 @@
 				],
 				"body": {},
 				"url": {
-					"raw": "{{host}}/templates?template_names=eu.arrowhead.example.",
+					"raw": "{{host}}/templates?template_names=eu.arrowhead.",
 					"host": [
 						"{{host}}"
 					],
@@ -60,7 +60,7 @@
 					"query": [
 						{
 							"key": "template_names",
-							"value": "eu.arrowhead.example.",
+							"value": "eu.arrowhead.",
 							"equals": true
 						}
 					]
@@ -76,7 +76,7 @@
 				"header": [],
 				"body": {},
 				"url": {
-					"raw": "{{host}}/templates?template_names=eu.arrowhead.example.PumpX3",
+					"raw": "{{host}}/templates?template_names=eu.arrowhead.example.pumps.TemplateCX",
 					"host": [
 						"{{host}}"
 					],
@@ -86,7 +86,7 @@
 					"query": [
 						{
 							"key": "template_names",
-							"value": "eu.arrowhead.example.PumpX3",
+							"value": "eu.arrowhead.example.pumps.TemplateCX",
 							"equals": true
 						}
 					]
@@ -107,7 +107,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "[\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX1\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA1A\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"RED\",\n\t\t\t\"Preassure\": 2.3,\n\t\t\t\"Speed\": 9.3\n\t\t}\n\t},\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX1\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA1B\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"BLUE\",\n\t\t\t\"Preassure\": 12.3,\n\t\t\t\"Speed\": 7\n\t\t}\n\t},\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX2\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA2A\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"GREEN\",\n\t\t\t\"Preassure\": 12.3,\n\t\t\t\"Speed\": 0.2\n\t\t}\n\t}\n]"
+					"raw": "[\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.pumps.TemplateAX\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.pumps.A1\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"RED\",\n\t\t\t\"Preassure\": 2.3,\n\t\t\t\"Speed\": 9.3\n\t\t}\n\t},\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.pumps.TemplateAX\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.pumps.A2\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"BLUE\",\n\t\t\t\"Preassure\": 12.3,\n\t\t\t\"Speed\": 7\n\t\t}\n\t},\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.pumps.TemplateBX\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.pumps.B1\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"GREEN\",\n\t\t\t\"Preassure\": 12.3,\n\t\t\t\"Speed\": 0.2\n\t\t}\n\t}\n]"
 				},
 				"url": {
 					"raw": "{{host}}/documents",
@@ -134,7 +134,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "[\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX1\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA1A\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"TURQUOISE\",\n\t\t\t\"Preassure\": 2.3,\n\t\t\t\"Speed\": 9.3\n\t\t}\n\t},\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX1\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA1B\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"BLUE\",\n\t\t\t\"Preassure\": 9000,\n\t\t\t\"Speed\": 7\n\t\t}\n\t},\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX2\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA2A\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"GREEN\",\n\t\t\t\"Preassure\": 12.3,\n\t\t\t\"Speed\": -12\n\t\t}\n\t}\n]"
+					"raw": "[\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.pumps.TemplateAX\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.pumps.A1\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"TURQUOISE\",\n\t\t\t\"Preassure\": 2.3,\n\t\t\t\"Speed\": 9.3\n\t\t}\n\t},\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.pumps.TemplateAX\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.pumps.A2\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"BLUE\",\n\t\t\t\"Preassure\": 9000,\n\t\t\t\"Speed\": 7\n\t\t}\n\t},\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.pumps.TemplateBX\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.pumps.B1\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"GREEN\",\n\t\t\t\"Preassure\": 12.3,\n\t\t\t\"Speed\": -12\n\t\t}\n\t}\n]"
 				},
 				"url": {
 					"raw": "{{host}}/documents",
@@ -161,7 +161,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "[\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX1\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA1A\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"TURQUOISE\",\n\t\t\t\"Preassure\": 2.3,\n\t\t\t\"Speed\": 9.3\n\t\t}\n\t},\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX1\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA1B\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"BLUE\",\n\t\t\t\"Preassure\": 9000,\n\t\t\t\"Speed\": 7\n\t\t}\n\t},\n\t{\n\t\t\"TemplateName\": \"eu.arrowhead.example.PumpX2\",\n\t\t\"DocumentName\": \"eu.arrowhead.example.PumpA2A\",\n\t\t\"Body\": {\n\t\t\t\"Tag\": \"GREEN\",\n\t\t\t\"Preassure\": 12.3,\n\t\t\t\"Speed\": -12\n\t\t}\n\t}\n]"
+					"raw": "[\n\t{\n\t\t\"DocumentName\": \"eu.arrowhead.example.valves.X10\",\n\t\t\"Body\": {\n\t\t\t\"Preassure\": 2.3,\n\t\t\t\"Monitoring\": true\n\t\t}\n\t},\n\t{\n\t\t\"DocumentName\": \"eu.arrowhead.example.valves.X11\",\n\t\t\"Body\": {\n\t\t\t\"Preassure\": 9000,\n\t\t\t\"Monitoring\": false,\n\t\t\t\"Comment\": \"Monitoring device is broken.\"\n\t\t}\n\t}\n]"
 				},
 				"url": {
 					"raw": "{{host}}/documents",
@@ -209,7 +209,7 @@
 				"header": [],
 				"body": {},
 				"url": {
-					"raw": "{{host}}/documents?document_names=eu.",
+					"raw": "{{host}}/documents?document_names=eu.arrowhead.example.pumps.",
 					"host": [
 						"{{host}}"
 					],
@@ -219,7 +219,7 @@
 					"query": [
 						{
 							"key": "document_names",
-							"value": "eu.",
+							"value": "eu.arrowhead.example.pumps.",
 							"equals": true
 						}
 					]
@@ -266,17 +266,17 @@
 				"header": [],
 				"body": {},
 				"url": {
-					"raw": "{{host}}/templates?template_names=eu.arrowhead.example.PumpX3",
+					"raw": "{{host}}/documents?document_names=eu.arrowhead.example.pumps.B1",
 					"host": [
 						"{{host}}"
 					],
 					"path": [
-						"templates"
+						"documents"
 					],
 					"query": [
 						{
-							"key": "template_names",
-							"value": "eu.arrowhead.example.PumpX3",
+							"key": "document_names",
+							"value": "eu.arrowhead.example.pumps.B1",
 							"equals": true
 						}
 					]
