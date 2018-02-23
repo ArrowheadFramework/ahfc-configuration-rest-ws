@@ -190,8 +190,10 @@ export class ConfigurationSystem {
         function validateDocuments(reader, documents): Promise<acml.Report[]> {
             const index = new Map<string, acml.Document[]>();
             for (const document of documents) {
-                const path = normalizePath(document.template);
-                index.set(path, (index.get(path) || []).concat(document));
+                if (document.template) {
+                    const path = normalizePath(document.template);
+                    index.set(path, (index.get(path) || []).concat(document));
+                }
             }
             const templatePaths = Array.from(index.keys());
             return list(reader, ".t", templatePaths, acml.Template.read)

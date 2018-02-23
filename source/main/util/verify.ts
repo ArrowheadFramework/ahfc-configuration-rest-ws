@@ -96,6 +96,23 @@ export function isString(value: any, message?: string): string {
     throw new TypeError(message || "Not a string: " + JSON.stringify(value));
 }
 
+/**
+ * Verifies that given value is a string.
+ *
+ * A TypeError is thrown if verification fails.
+ *
+ * @param value Value to verify.
+ * @param message Verification failure message.
+ * @return Given value, unless verification fails.
+ */
+export function isStringOrNothing(value: any, message?: string): string {
+    if (value === undefined || value === null || typeof value === "string") {
+        return value;
+    }
+    throw new TypeError(message || "Not string or nothing: " +
+        JSON.stringify(value));
+}
+
 export function isValid(value: any, predicate: (any) => boolean, message?): any {
     if (predicate(value)) {
         return value;
