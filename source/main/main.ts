@@ -44,7 +44,7 @@ function start() {
     let before: Promise<any>;
     if (isDiscoverable) {
         console.log("+ Registering with service registry at %s ...",
-            ((config.dnssd || {}).nameServers || "").join(", "));
+            ((config.dnssd || {}).nameServers || []).join(", "));
         serviceDiscovery = new ahfc.ServiceDiscoveryDNSSD(config.dnssd);
         serviceInstanceName = config.instanceName;
 
