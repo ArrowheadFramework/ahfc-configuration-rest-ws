@@ -92,7 +92,7 @@ class Application {
 
                 } catch (error) {
                     return Promise.resolve({
-                        code: http.Code["Bad request"],
+                        code: http.Code["Bad Request"],
                         body: new apes.WritableError(error.message)
                     });
                 }
@@ -140,7 +140,7 @@ class Application {
                 handler: authenticate((params, headers, system, body) => {
                     if (!Array.isArray(body)) {
                         return Promise.resolve({
-                            code: http.Code["Bad request"],
+                            code: http.Code["Bad Request"],
                             body: new apes.WritableError("Not an array."),
                         });
                     }
@@ -158,7 +158,7 @@ class Application {
                                 code: http.Code["Created"],
                                 body: new apes.WritableArray(...documents),
                             } : {
-                                code: http.Code["Bad request"],
+                                code: http.Code["Bad Request"],
                                 body: new apes.WritableArray(...reports),
                             });
                 }),
@@ -172,7 +172,7 @@ class Application {
                     const names = (params["rule_names"] || "").split(",");
                     return system.management()
                         .removeRules(names)
-                        .then(() => ({ code: http.Code["No content"] }));
+                        .then(() => ({ code: http.Code["No Content"] }));
                 }),
             })
             .handle({
@@ -194,7 +194,7 @@ class Application {
                 handler: authenticate((params, headers, system, body) => {
                     if (!Array.isArray(body)) {
                         return Promise.resolve({
-                            code: http.Code["Bad request"],
+                            code: http.Code["Bad Request"],
                             body: new apes.WritableError("Not an array."),
                         });
                     }
@@ -219,7 +219,7 @@ class Application {
                     const names = (params["template_names"] || "").split(",");
                     return system.management()
                         .removeTemplates(names)
-                        .then(() => ({ code: http.Code["No content"] }));
+                        .then(() => ({ code: http.Code["No Content"] }));
                 }),
             })
             .handle({
@@ -241,7 +241,7 @@ class Application {
                 handler: authenticate((params, headers, system, body) => {
                     if (!Array.isArray(body)) {
                         return Promise.resolve({
-                            code: http.Code["Bad request"],
+                            code: http.Code["Bad Request"],
                             body: new apes.WritableError("Not an array."),
                         });
                     }
