@@ -114,26 +114,18 @@ class Application {
                 method: http.Method.GET,
                 path: "/documents",
                 handler: authenticate((params, headers, system) => {
-                    if (params["template_names"] !== undefined) {
-                        const names = params["template_names"].split(",");
-                        return system.store()
-                            .listDocumentsByTemplateNames(names)
-                            .then(documents => ({
-                                code: http.Code["OK"],
-                                body: documents.reduce((acc, document) => {
-                                    acc.push(document.body);
-                                    return acc;
-                                }, new apes.WritableArray()),
-                            }));
-                    }
+                    const f = (params["inline"] || "").toLowerCase() === "true"
+                        ? (document) => document.body
+                        : (document) => document;
                     const names = (params["document_names"] || "").split(",");
-                    // TODO: If current user lacks permission to access
-                    // management service, try with store instead.
-                    return system.management()
+                    return system.store()
                         .listDocuments(names)
                         .then(documents => ({
                             code: http.Code["OK"],
-                            body: new apes.WritableArray(...documents),
+                            body: documents.reduce((array, document) => {
+                                array.push(f(document));
+                                return array;
+                            }, new apes.WritableArray())
                         }));
                 }),
             })
@@ -164,53 +156,6 @@ class Application {
                                 code: http.Code["Bad Request"],
                                 body: new apes.WritableArray(...reports),
                             });
-                }),
-            })
-
-            // Rule handlers.
-            .handle({
-                method: http.Method.DELETE,
-                path: "/rules",
-                handler: authenticate((params, headers, system) => {
-                    const names = (params["rule_names"] || "").split(",");
-                    return system.management()
-                        .removeRules(names)
-                        .then(() => ({ code: http.Code["No Content"] }));
-                }),
-            })
-            .handle({
-                method: http.Method.GET,
-                path: "/rules",
-                handler: authenticate((params, headers, system) => {
-                    const names = (params["rule_names"] || "").split(",");
-                    return system.management()
-                        .listRules(names)
-                        .then(rules => ({
-                            code: http.Code["OK"],
-                            body: new apes.WritableArray(...rules),
-                        }));
-                }),
-            })
-            .handle({
-                method: http.Method.POST,
-                path: "/rules",
-                handler: authenticate((params, headers, system, body) => {
-                    if (!Array.isArray(body)) {
-                        return Promise.resolve({
-                            code: http.Code["Bad Request"],
-                            body: new apes.WritableError("Not an array."),
-                        });
-                    }
-                    const rules = new Array<acml.Rule>();
-                    for (const item of body) {
-                        rules.push(acml.Rule.read(item));
-                    }
-                    return system.management()
-                        .addRules(rules)
-                        .then(() => ({
-                            code: http.Code["Created"],
-                            body: new apes.WritableArray(...rules),
-                        }));
                 }),
             })
 

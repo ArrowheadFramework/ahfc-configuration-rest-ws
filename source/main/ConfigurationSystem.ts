@@ -40,63 +40,8 @@ export class ConfigurationSystem {
                         }));
             }
 
-            listDocuments(names: string[]): Promise<acml.Document[]> {
-                return directory.read(reader =>
-                    list(reader, ".d", names, acml.Document.read));
-            }
-
             removeDocuments(names: string[]): Promise<void> {
                 return directory.write(writer => remove(writer, ".d", names));
-            }
-
-            addRules(rules: acml.Rule[]): Promise<void> {
-                return directory.write(writer => writer
-                    // Update index.
-                    .add(rules.reduce((entries, rule) => {
-                        const ruleName = rule.name
-                            .replace(/'/g, "''")
-                            .replace(/#/g, "'#");
-
-                        // One to many.
-                        const templateToRule = {
-                            path: prefixPath(".tr",
-                                `${rule.template}.#.${ruleName}`),
-                            value: Buffer.from(rule.name, "utf8"),
-                        };
-                        // One to one.
-                        const ruleToTemplate = {
-                            path: prefixPath(".rt", rule.name),
-                            value: Buffer.from(rule.template, "utf8"),
-                        };
-                        return entries.concat(templateToRule, ruleToTemplate);
-                    }, new Array<db.DirectoryEntry>()))
-                    // Add rules.
-                    .then(() => add(writer, ".r", rules)));
-            }
-
-            listRules(names: string[]): Promise<acml.Rule[]> {
-                return directory.read(reader =>
-                    list(reader, ".r", names, acml.Rule.read));
-            }
-
-            removeRules(names: string[]): Promise<void> {
-                return directory.write(writer => writer
-                    // Add relevant index entry names to list of rule names.
-                    .list(prefixPaths(".rt", names))
-                    .then(entries => entries.reduce((paths, entry) => {
-                        const rule = entry.path.substring(3)
-                            .replace(/'/g, "''")
-                            .replace(/#/g, "'#");
-                        const template = entry.value.toString("utf8");
-
-                        const templateToRule = prefixPath(".tr",
-                            `${template}.#.${rule}`);
-                        const ruleToTemplate = entry.path;
-
-                        return paths.concat(templateToRule, ruleToTemplate);
-                    }, prefixPaths(".r", names)))
-                    // Remove rules and index entries.
-                    .then(paths => writer.remove(paths)));
             }
 
             addTemplates(templates: acml.Template[]): Promise<void> {
@@ -114,32 +59,10 @@ export class ConfigurationSystem {
         };
 
         this.serviceStore = new class implements ConfigurationStore {
-            listDocumentsByTemplateNames(names): Promise<acml.Document[]> {
-                return directory.read(reader => reader
-                    // Get rules associated with given template names.
-                    .list(prefixPaths(".tr", names).map(name => `${name}.#.`))
-                    .then(entries => list(reader, ".r", entries
-                        .map(entry => entry.value.toString()), acml.Rule.read))
-                    // Select the rules with the highest priorities.
-                    .then(rules => rules.reduce((rules, rule) => {
-                        const match = rules.get(rule.template);
-                        if (match) {
-                            if (match.priority < rule.priority) {
-                                rules.set(rule.template, rule);
-                            }
-                        } else {
-                            rules.set(rule.template, rule);
-                        }
-                        return rules;
-                    }, new Map<string, acml.Rule>()))
-                    // Fetch documents associated with selected rules.
-                    .then(rules => {
-                        return list(reader, ".d", Array.from(rules.values())
-                            .map(rule => rule.document), acml.Document.read);
-                    })
-                    // TODO: Only return documents where the rule in question
-                    // has a service name matching that of the requesting user.
-                );
+            listDocuments(names: string[]): Promise<acml.Document[]> {
+                // TODO: Only return documents the requesting user may read.
+                return directory.read(reader =>
+                    list(reader, ".d", names, acml.Document.read));
             }
         };
 

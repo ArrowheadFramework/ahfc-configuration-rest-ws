@@ -6,11 +6,16 @@ import * as db from "./db";
  */
 export interface ConfigurationStore {
     /**
-     * Requests all documents the requestor is allowed to see, by the names of
-     * the templates used to create them.
-     * 
-     * @param names Names of templates associated with desired documents.
-     * @return Requested documents.
+     * Retrieves all documents with names matching those given a current user
+     * is allowed to see.
+     *
+     * The provided names may be fully or partially qualified. In case of any
+     * partially qualified name, all documents that begins with the same path
+     * segments are considered matches. Note that a single empty name, or a
+     * array of zero names, will match all known documents.
+     *
+     * @param names An array of fully or partially qualified document names.
+     * @return A list of documents.
      */
-    listDocumentsByTemplateNames(names: string[]): Promise<acml.Document[]>;
+    listDocuments(names: string[]): Promise<acml.Document[]>;
 }
