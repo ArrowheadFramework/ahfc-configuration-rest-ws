@@ -24,6 +24,21 @@ export class ConfigurationSystem {
      */
     public constructor(directory: db.Directory, user: any) {
         this.serviceManagement = new class implements ConfigurationManagement {
+            addTemplates(templates: acml.Template[]): Promise<void> {
+                return directory.write(writer => add(writer, ".t", templates));
+            }
+
+            listTemplates(names: string[]): Promise<acml.Template[]> {
+                return directory.read(reader =>
+                    list(reader, ".t", names, acml.Template.read));
+            }
+
+            removeTemplates(names: string[]): Promise<void> {
+                return directory.write(writer => remove(writer, ".t", names));
+            }
+        };
+
+        this.serviceStore = new class implements ConfigurationStore {
             addDocuments(documents: acml.Document[]): Promise<acml.Report[]> {
                 return directory.write(writer =>
                     validateDocuments(writer, documents)
@@ -40,29 +55,14 @@ export class ConfigurationSystem {
                         }));
             }
 
-            removeDocuments(names: string[]): Promise<void> {
-                return directory.write(writer => remove(writer, ".d", names));
-            }
-
-            addTemplates(templates: acml.Template[]): Promise<void> {
-                return directory.write(writer => add(writer, ".t", templates));
-            }
-
-            listTemplates(names: string[]): Promise<acml.Template[]> {
-                return directory.read(reader =>
-                    list(reader, ".t", names, acml.Template.read));
-            }
-
-            removeTemplates(names: string[]): Promise<void> {
-                return directory.write(writer => remove(writer, ".t", names));
-            }
-        };
-
-        this.serviceStore = new class implements ConfigurationStore {
             listDocuments(names: string[]): Promise<acml.Document[]> {
                 // TODO: Only return documents the requesting user may read.
                 return directory.read(reader =>
                     list(reader, ".d", names, acml.Document.read));
+            }
+
+            removeDocuments(names: string[]): Promise<void> {
+                return directory.write(writer => remove(writer, ".d", names));
             }
         };
 

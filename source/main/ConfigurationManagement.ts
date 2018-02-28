@@ -5,31 +5,6 @@ import * as acml from "./acml";
  */
 export interface ConfigurationManagement {
     /**
-     * Adds given array of documents, if all added documents are sound.
-     *
-     * If an added document has a document name equal to any existing document,
-     * the existing document is replaced.
-     *
-     * @param documents Documents to add.
-     * @return A list of document validation reports. Reports are provided for
-     * all documents, even if they are sound.
-     */
-    addDocuments(documents: acml.Document[]): Promise<acml.Report[]>;
-
-    /**
-     * Removes all known documents with names matching those given.
-     *
-     * The provided names may be fully or partially qualified. In case of any
-     * partially qualified name, all documents that begins with the same path
-     * segments are considered matches. Note that a single empty name, or a
-     * array of zero names, will match all known documents.
-     *
-     * @param names An array of fully or partially qualified document names.
-     * @return A promise resolved with nothing when the operation is completed.
-     */
-    removeDocuments(names: string[]): Promise<void>;
-
-    /**
      * Adds given array of templates.
      *
      * If an added template has a template name equal to any existing template,
