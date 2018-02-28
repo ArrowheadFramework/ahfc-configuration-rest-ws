@@ -40,6 +40,8 @@ export class ConfigurationSystem {
 
         this.serviceStore = new class implements ConfigurationStore {
             addDocuments(documents: acml.Document[]): Promise<acml.Report[]> {
+                // TODO: Only allow if user may add documents at specified
+                // locations.
                 return directory.write(writer =>
                     validateDocuments(writer, documents)
                         .then(reports => {
@@ -61,7 +63,23 @@ export class ConfigurationSystem {
                     list(reader, ".d", names, acml.Document.read));
             }
 
+            patchDocuments(patches: acml.Patch[]): Promise<acml.Report[]> {
+                // TODO: Only allow if user may apply every patch.
+                const names = patches.map(patch => patch.name);
+                return directory.write(writer =>
+                    list(writer, ".d", names, acml.Document.read))
+                    .then(documents => {
+                        // TODO: 1. Match documents against patches.
+                        //       2. Patch documents (patches.apply(document)).
+                        //       3. Validate documents.
+                        //       4. Save documents.
+                        return [];
+                    })
+                
+            }
+
             removeDocuments(names: string[]): Promise<void> {
+                // TODO: Only allow if user may remove all documents.
                 return directory.write(writer => remove(writer, ".d", names));
             }
         };
@@ -155,7 +173,8 @@ export class ConfigurationSystem {
      * @return Management service, if user is authorized to consume it.
      */
     public management(): ConfigurationManagement {
-        // TODO: Check user authorization.
+        // TODO: Check user authorization. If exists, user may do anything the
+        // returned interface provides.
         return this.serviceManagement;
     }
 

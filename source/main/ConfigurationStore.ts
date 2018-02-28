@@ -32,6 +32,13 @@ export interface ConfigurationStore {
     listDocuments(names: string[]): Promise<acml.Document[]>;
 
     /**
+     * Updates identified parts of existing documents.
+     * 
+     * @param patches Document patches.
+     */
+    patchDocuments(patches: acml.Patch[]): Promise<acml.Report[]>;
+
+    /**
      * Removes all known documents with names matching those given.
      *
      * The provided names may be fully or partially qualified. In case of any
