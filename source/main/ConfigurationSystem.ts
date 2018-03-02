@@ -69,6 +69,7 @@ export class ConfigurationSystem {
         // TODO: Can this implementation be made more pretty?
         this._store = new class implements ConfigurationStore {
             public addDocuments(documents: acml.Document[]): Promise<acml.Report[]> {
+                // TODO: Check if user may add documents.
                 return this.validateDocuments(documents)
                     .then(validation => validation.violationCount === 0
                         ? dirDocuments.write(writer => writer.add(documents)
@@ -112,6 +113,7 @@ export class ConfigurationSystem {
             }
 
             public listDocuments(names: string[]): Promise<acml.Document[]> {
+                // TODO: Only return documents user is allowed to see.
                 return dirDocuments.read(reader => reader.list(names));
             }
 
@@ -159,6 +161,7 @@ export class ConfigurationSystem {
             }
 
             public removeDocuments(names: string[]): Promise<void> {
+                // TODO: Check if user may remove documents.
                 return dirDocuments.write(writer => writer.remove(names));
             }
         }
