@@ -167,8 +167,8 @@ export abstract class TemplateField implements Writable {
                             return violations;
                         }
                     }
-                } catch (exception) {
-                    violations.push({ path, condition, exception });
+                } catch (error) {
+                    violations.push({ path, condition, error });
                 }
                 violations.push({ path, condition });
 

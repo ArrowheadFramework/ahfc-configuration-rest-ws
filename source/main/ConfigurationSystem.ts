@@ -3,18 +3,20 @@ import * as apes from "./apes";
 import { ConfigurationManagement } from "./ConfigurationManagement";
 import { ConfigurationStore } from "./ConfigurationStore";
 import * as db from "./db";
+import * as dpath from "./util/dpath";
 import * as io from "./io";
 
-interface NamedWritable extends apes.Writable {
-    name: string;
+interface Validation {
+    reports: Map<string, acml.Report>,
+    violationCount: number,
 }
 
 /**
  * Represents the Arrowhead Configuration System.
  */
 export class ConfigurationSystem {
-    private readonly serviceManagement: ConfigurationManagement;
-    private readonly serviceStore: ConfigurationStore;
+    private readonly _management: ConfigurationManagement;
+    private readonly _store: ConfigurationStore;
 
     /**
      * Creates new configuration system handler.
@@ -23,145 +25,142 @@ export class ConfigurationSystem {
      * @param user Authorization profile of user using system.
      */
     public constructor(directory: db.Directory, user: any) {
-        this.serviceManagement = new class implements ConfigurationManagement {
+        const sink = new io.WritableBuffer(128);
+        const sinkWriter = new apes.WriterJSON(sink);
+
+        // Directory of documents.
+        const dirDocuments = directory.enter(".d").map(
+            (entry: db.DirectoryEntry) => {
+                const object = JSON.parse(entry.value.toString());
+                return acml.Document.read(object);
+            },
+            (document: acml.Document) => {
+                document.write(sinkWriter);
+                return { path: document.name, value: sink.pop() };
+            });
+
+        // Directory of templates.
+        const dirTemplates = directory.enter(".t").map(
+            (entry: db.DirectoryEntry) => {
+                const object = JSON.parse(entry.value.toString());
+                return acml.Template.read(object);
+            },
+            (template: acml.Template) => {
+                template.write(sinkWriter);
+                return { path: template.name, value: sink.pop() };
+            });
+
+        // Management implementation.
+        this._management = new class implements ConfigurationManagement {
             addTemplates(templates: acml.Template[]): Promise<void> {
-                return directory.write(writer => add(writer, ".t", templates));
+                return dirTemplates.write(writer => writer.add(templates));
             }
 
             listTemplates(names: string[]): Promise<acml.Template[]> {
-                return directory.read(reader =>
-                    list(reader, ".t", names, acml.Template.read));
+                return dirTemplates.read(reader => reader.list(names));
             }
 
             removeTemplates(names: string[]): Promise<void> {
-                return directory.write(writer => remove(writer, ".t", names));
+                return dirTemplates.write(writer => writer.remove(names));
             }
-        };
-
-        this.serviceStore = new class implements ConfigurationStore {
-            addDocuments(documents: acml.Document[]): Promise<acml.Report[]> {
-                // TODO: Only allow if user may add documents at specified
-                // locations.
-                return directory.write(writer =>
-                    validateDocuments(writer, documents)
-                        .then(reports => {
-                            const violationCount = reports
-                                .reduce((violationCount, report) => {
-                                    return violationCount +
-                                        report.violations.length;
-                                }, 0);
-                            return violationCount === 0
-                                ? add(writer, ".d", documents)
-                                    .then(() => reports)
-                                : reports;
-                        }));
-            }
-
-            listDocuments(names: string[]): Promise<acml.Document[]> {
-                // TODO: Only return documents the requesting user may read.
-                return directory.read(reader =>
-                    list(reader, ".d", names, acml.Document.read));
-            }
-
-            patchDocuments(patches: acml.Patch[]): Promise<acml.Report[]> {
-                // TODO: Only allow if user may apply every patch.
-                const names = patches.map(patch => patch.name);
-                return directory.write(writer =>
-                    list(writer, ".d", names, acml.Document.read))
-                    .then(documents => {
-                        // TODO: 1. Match documents against patches.
-                        //       2. Patch documents (patches.apply(document)).
-                        //       3. Validate documents.
-                        //       4. Save documents.
-                        return [];
-                    })
-                
-            }
-
-            removeDocuments(names: string[]): Promise<void> {
-                // TODO: Only allow if user may remove all documents.
-                return directory.write(writer => remove(writer, ".d", names));
-            }
-        };
-
-        function add(writer, prefix, values: NamedWritable[]): Promise<void> {
-            const sink = new io.WritableBuffer(128);
-            const sinkWriter = new apes.WriterJSON(sink);
-            return writer.add(values.map(entry => {
-                entry.write(sinkWriter);
-                return {
-                    path: prefixPath(prefix, entry.name),
-                    value: sink.pop(),
-                };
-            }));
         }
 
-        function list<T>(reader, prefix, paths, read: (x) => T): Promise<T[]> {
-            return reader
-                .list(prefixPaths(prefix, paths))
-                .then(entries => new Promise<T[]>((resolve, reject) => {
-                    try {
-                        resolve(entries.map(entry => {
-                            return read(JSON.parse(entry.value.toString()));
-                        }));
-                    } catch (exception) {
-                        reject(exception);
-                    }
-                }));
-        }
-
-        function remove(writer, prefix, paths): Promise<void> {
-            return writer.remove(prefixPaths(prefix, paths));
-        }
-
-        function normalizePath(path: string): string {
-            return (path.startsWith(".") ? "" : ".") + path;
-        }
-
-        function prefixPath(prefix: string, path: string): string {
-            return prefix + normalizePath(path);
-        }
-
-        function prefixPaths(prefix: string, paths: string[]): string[] {
-            return (!paths || paths.length === 0)
-                ? [prefix]
-                : paths.map(path => prefixPath(prefix, path));
-        }
-
-        function validateDocuments(reader, documents): Promise<acml.Report[]> {
-            const index = new Map<string, acml.Document[]>();
-            for (const document of documents) {
-                if (document.template) {
-                    const path = normalizePath(document.template);
-                    index.set(path, (index.get(path) || []).concat(document));
-                }
+        // Store implementation.
+        // TODO: Can this implementation be made more pretty?
+        this._store = new class implements ConfigurationStore {
+            public addDocuments(documents: acml.Document[]): Promise<acml.Report[]> {
+                return this.validateDocuments(documents)
+                    .then(validation => validation.violationCount === 0
+                        ? dirDocuments.write(writer => writer.add(documents)
+                            .then(_ => validation.reports.values()))
+                        : validation.reports.values())
+                    .then(reports => Array.from(reports));
             }
-            const templatePaths = Array.from(index.keys());
-            return list(reader, ".t", templatePaths, acml.Template.read)
-                .then(templates => templates.reduce((reports, template) => {
-                    const path = normalizePath(template.name);
-                    const documents = index.get(path) || [];
-                    let document: acml.Document;
-                    while (document = documents.pop()) {
-                        reports.push(template.validate(document));
-                    }
-                    return reports;
-                }, new Array<acml.Report>()))
-                .then(reports => {
-                    for (const documents of index.values()) {
-                        for (const document of documents) {
-                            reports.push(new acml.Report(
-                                document.name,
-                                document.template,
-                                [{
-                                    path: ".",
-                                    condition: "template != undefined",
-                                }]
-                            ));
+
+            private validateDocuments(documents: acml.Document[]): Promise<Validation> {
+                const templateToDocuments = documents
+                    .filter(document => document.template)
+                    .reduce((tmap, document) => {
+                        const path = dpath.normalize(document.template);
+                        tmap.set(path, (tmap.get(path) || []).concat(document));
+                        return tmap;
+                    }, new Map<string, acml.Document[]>());
+
+                let violationCount = 0;
+
+                return dirTemplates
+                    .read(reader => reader.list(templateToDocuments.keys()))
+                    .then(templates => templates.reduce((dmap, template) => {
+                        const path = dpath.normalize(template.name);
+                        const documents = templateToDocuments.get(path) || [];
+                        for (let document; document = documents.pop();) {
+                            const report = template.validate(document);
+                            violationCount += report.violations.length;
+                            dmap.set(document.name, report);
                         }
-                    }
-                    return reports;
-                });
+                        for (const documents of templateToDocuments.values()) {
+                            for (const document of documents) {
+                                violationCount += 1;
+                                dmap.set(document.name, document.report({
+                                    condition: `TemplateExists("${document.template}")`,
+                                }));
+                            }
+                        }
+                        return dmap;
+                    }, new Map<string, acml.Report>()))
+                    .then(reports => ({ reports, violationCount }));
+            }
+
+            public listDocuments(names: string[]): Promise<acml.Document[]> {
+                return dirDocuments.read(reader => reader.list(names));
+            }
+
+            public patchDocuments(patches: acml.Patch[]): Promise<acml.Report[]> {
+                // TODO: Only allow if user may apply every patch.
+                return dirDocuments
+                    .read(reader => {
+                        const paths = patches
+                            .map(patch => patch.name)
+                            .filter(name => name);
+                        return reader.list(paths);
+                    })
+                    .then(documents => {
+                        const pmap = patches.reduce((map, patch) => {
+                            map.set(dpath.normalize(patch.name), patch);
+                            return map;
+                        }, new Map<string, acml.Patch>());
+
+                        for (const document of documents) {
+                            const patch = pmap.get(dpath.normalize(document.name));
+                            pmap.delete(dpath.normalize(patch.name));
+                            patch.apply(document);
+                        }
+
+                        return this.validateDocuments(documents)
+                            .then(validation => {
+                                for (const [_, patch] of pmap) {
+                                    let report = validation.reports.get(dpath.normalize(patch.name));
+                                    if (!report) {
+                                        report = patch.report();
+                                        validation.reports.set(dpath.normalize(patch.name), report);
+                                    }
+                                    validation.violationCount += 1;
+                                    report.violations.push({
+                                        condition: `DocumentExists("${patch.name}")`
+                                    });
+                                }
+                                return validation.violationCount === 0
+                                    ? dirDocuments.write(writer => writer.add(documents)
+                                        .then(_ => validation.reports.values()))
+                                    : validation.reports.values();
+                            });
+                    })
+                    .then(reports => Array.from(reports));
+            }
+
+            public removeDocuments(names: string[]): Promise<void> {
+                return dirDocuments.write(writer => writer.remove(names));
+            }
         }
     }
 
@@ -175,7 +174,7 @@ export class ConfigurationSystem {
     public management(): ConfigurationManagement {
         // TODO: Check user authorization. If exists, user may do anything the
         // returned interface provides.
-        return this.serviceManagement;
+        return this._management;
     }
 
     /**
@@ -187,6 +186,6 @@ export class ConfigurationSystem {
      */
     public store(): ConfigurationStore {
         // TODO: Check user authorization.
-        return this.serviceStore;
+        return this._store;
     }
 }

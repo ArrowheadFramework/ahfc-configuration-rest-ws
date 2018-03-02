@@ -6,7 +6,7 @@ import * as db from "./db";
  */
 export interface ConfigurationStore {
     /**
-     * Adds given array of documents, if all added documents are sound.
+     * Adds given array of documents, if all of them are sound.
      *
      * If an added document has a document name equal to any existing document,
      * the existing document is replaced.

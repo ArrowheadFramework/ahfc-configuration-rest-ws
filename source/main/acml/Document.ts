@@ -1,4 +1,5 @@
 import * as apes from "../apes";
+import { Report, Violation } from "./Report";
 import * as verify from "../util/verify";
 
 /**
@@ -29,6 +30,15 @@ export class Document implements apes.Writable {
                 "Document template name not fully qualified: " + template
             );
         }
+    }
+
+    /**
+     * Creates new document report containing given violations.
+     * 
+     * @param violations Violations to put in document report.
+     */
+    public report(...violations: Violation[]): Report {
+        return new Report(this.name, this.template, violations);
     }
 
     /**

@@ -1,5 +1,6 @@
 import * as apes from "../apes";
 import { Document } from "./Document";
+import { Report, Violation } from "./Report";
 import * as verify from "../util/verify";
 
 /**
@@ -22,6 +23,9 @@ export class Patch implements apes.Writable {
         public readonly path: string,
         public readonly data?: any,
     ) {
+        if (!name) {
+            throw new Error("Document name must be specified.");
+        }
         if (name.endsWith(".")) {
             throw new Error(
                 "Document name not fully qualified: " + name
@@ -32,6 +36,15 @@ export class Patch implements apes.Writable {
                 "Illegal document patch path: " + path
             );
         }
+    }
+
+    /**
+     * Creates new patch report containing given violations.
+     * 
+     * @param violations Violations to put in patch report.
+     */
+    public report(...violations: Violation[]): Report {
+        return new Report(this.name, undefined, violations);
     }
 
     /**

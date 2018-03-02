@@ -82,13 +82,20 @@ class Application {
     }
 
     private loadHTTPHandlers(settings: Settings) {
-        const directory = new db.DirectoryLMDB(settings.databasePath);
-        const authenticate = (f) => {
+        type AuthenticatedHandler = (
+            params: string[],
+            headers: string[],
+            system: ConfigurationSystem,
+            body?: object
+        ) => PromiseLike<http.Response>;
+
+        const directory = db.DirectoryLMDB.open(settings.databasePath);
+        const authenticate = (handler: AuthenticatedHandler) => {
             return (params, headers, body) => {
-                // TODO: Authenticate user and give reference to system.
+                // TODO: Authenticate user and give user to system.
                 const system = new ConfigurationSystem(directory, null);
                 try {
-                    return f(params, headers, system, body);
+                    return handler(params, headers, system, body);
 
                 } catch (error) {
                     console.log(error);
@@ -105,7 +112,8 @@ class Application {
                 path: "/documents",
                 handler: authenticate((params, headers, system) => {
                     const names = (params["document_names"] || "").split(",");
-                    return system.management()
+                    // TODO: Error code "Unauthorized" if access rule fails.
+                    return system.store()
                         .removeDocuments(names)
                         .then(() => ({ code: http.Code["No Content"] }));
                 })
@@ -118,6 +126,7 @@ class Application {
                         ? (document) => document.body
                         : (document) => document;
                     const names = (params["document_names"] || "").split(",");
+                    // TODO: Error code "Unauthorized" if access rule fails.
                     return system.store()
                         .listDocuments(names)
                         .then(documents => ({
@@ -127,6 +136,36 @@ class Application {
                                 return array;
                             }, new apes.WritableArray())
                         }));
+                }),
+            })
+            .handle({
+                method: http.Method.PATCH,
+                path: "/documents",
+                handler: authenticate((params, headers, system, body) => {
+                    if (!Array.isArray(body)) {
+                        return Promise.resolve({
+                            code: http.Code["Bad Request"],
+                            body: new apes.WritableError("Not an array."),
+                        });
+                    }
+                    const patches = new Array<acml.Patch>();
+                    for (const item of body) {
+                        patches.push(acml.Patch.read(item));
+                    }
+                    // TODO: Error code "Unauthorized" if access rule fails.
+                    return system.store()
+                        .patchDocuments(patches)
+                        .then(reports => reports
+                            .reduce((sum, report) => {
+                                return sum + report.violations.length;
+                            }, 0) === 0
+                            ? {
+                                code: http.Code["OK"],
+                                body: new apes.WritableArray(...patches),
+                            } : {
+                                code: http.Code["Bad Request"],
+                                body: new apes.WritableArray(...reports),
+                            });
                 }),
             })
             .handle({
@@ -143,7 +182,8 @@ class Application {
                     for (const item of body) {
                         documents.push(acml.Document.read(item));
                     }
-                    return system.management()
+                    // TODO: Error code "Unauthorized" if access rule fails.
+                    return system.store()
                         .addDocuments(documents)
                         .then(reports => reports
                             .reduce((sum, report) => {
@@ -165,6 +205,7 @@ class Application {
                 path: "/templates",
                 handler: authenticate((params, headers, system) => {
                     const names = (params["template_names"] || "").split(",");
+                    // TODO: Error code "Unauthorized" if access rule fails.
                     return system.management()
                         .removeTemplates(names)
                         .then(() => ({ code: http.Code["No Content"] }));
@@ -175,6 +216,7 @@ class Application {
                 path: "/templates",
                 handler: authenticate((params, headers, system) => {
                     const names = (params["template_names"] || "").split(",");
+                    // TODO: Error code "Unauthorized" if access rule fails.
                     return system.management()
                         .listTemplates(names)
                         .then(templates => ({
@@ -197,6 +239,7 @@ class Application {
                     for (const item of body) {
                         templates.push(acml.Template.read(item));
                     }
+                    // TODO: Error code "Unauthorized" if access rule fails.
                     return system.management()
                         .addTemplates(templates)
                         .then(() => ({

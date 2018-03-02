@@ -28,7 +28,7 @@ export class Report implements apes.Writable {
                 "Report document name not fully qualified: " + document
             );
         }
-        if (template.endsWith(".")) {
+        if (template && template.endsWith(".")) {
             throw new Error(
                 "Report template name not fully qualified: " + template
             );
@@ -36,19 +36,24 @@ export class Report implements apes.Writable {
     }
 
     write(writer: apes.Writer) {
-        writer.writeMap(writer => writer
-            .addText("DocumentName", this.document)
-            .addText("TemplateName", this.template)
-            .addList("Violations", writer => this.violations
+        writer.writeMap(writer => {
+            writer.addText("DocumentName", this.document);
+            if (this.template) {
+                writer.addText("TemplateName", this.template);
+            } else {
+                writer.addNull("TemplateName");
+            }
+            writer.addList("Violations", writer => this.violations
                 .forEach(violation => writer.addMap(writer => {
-                    writer
-                        .addText("Path", violation.path)
-                        .addText("Condition", violation.condition);
-                    if (violation.exception) {
-                        writer.addText("Exception",
-                            violation.exception.toString());
+                    writer.addText("Condition", violation.condition);
+                    if (violation.path) {
+                        writer.addText("Path", violation.path);
                     }
-                }))));
+                    if (violation.error) {
+                        writer.addText("Exception", violation.error.toString());
+                    }
+                })))
+        });
     }
 }
 
@@ -57,18 +62,18 @@ export class Report implements apes.Writable {
  */
 export interface Violation {
     /**
-     * Path to template entity that owns violated condition.
-     */
-    path: string;
-
-    /**
      * Specifies some violated condition or rule.
      */
     condition: TemplateCondition;
 
     /**
+     * Path to template entity that owns violated condition, if relevant.
+     */
+    path?: string;
+
+    /**
      * Provides additional data in case of an unexpected condition evaluation
      * failure.
      */
-    exception?: any;
+    error?: any;
 }

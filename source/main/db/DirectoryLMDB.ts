@@ -2,8 +2,10 @@ import {
     Directory,
     DirectoryEntry,
     DirectoryReader,
-    DirectoryWriter
+    DirectoryWriter,
+    DirectoryTransformer
 } from "./Directory";
+import * as dpath from "../util/dpath";
 import * as fs from "fs";
 import * as lmdb from "node-lmdb";
 
@@ -11,11 +13,8 @@ import * as lmdb from "node-lmdb";
  * A directory implementation relying on LMDB.
  */
 export class DirectoryLMDB implements Directory {
-    private readonly env: lmdb.Env;
-    private readonly dbi: any;
-
     /**
-     * Creates new LMDB directory database.
+     * Opens LMDB directory database, creating it if necessary.
      *
      * @param path Path to folder where database will or does reside. If the
      * folder does not exist, an attempt will be made to create it. The attempt
@@ -23,21 +22,38 @@ export class DirectoryLMDB implements Directory {
      * exist.
      * @param mapSize Size of database memory mapping. Dictates upper limit on
      * database size.
+     * @return Opened database.
      */
-    public constructor(path: string, mapSize = 2 * 1024 * 1024 * 1024) {
+    public static open(path: string, mapSize = 2147483648): DirectoryLMDB {
         if (!fs.existsSync(path)) {
             fs.mkdirSync(path);
         }
-        this.env = new lmdb.Env;
-        this.env.open({ path, mapSize, maxDbs: 1 });
-        this.dbi = this.env.openDbi({ create: true, name: null });
+        const env = new lmdb.Env;
+        env.open({ path, mapSize, maxDbs: 1 });
+        const dbi = env.openDbi({ create: true, name: null });
+        return new DirectoryLMDB("", env, dbi);
+    }
+
+    private constructor(
+        private readonly dir: string,
+        private readonly env: lmdb.Env,
+        private readonly dbi: any,
+    ) { }
+
+    public enter(directory: string): Directory {
+        const dir = dpath.join(this.dir, directory); 
+        return new DirectoryLMDB(dir, this.env, this.dbi);
+    }
+
+    map<U>(reader: (t: DirectoryEntry) => U, writer: (u: U) => DirectoryEntry): Directory<U> {
+        return new DirectoryTransformer(this, reader, writer);
     }
 
     public read<T>(f: (r: DirectoryReader) => Promise<T>): Promise<T> {
         let txn: lmdb.Txn;
         try {
             txn = this.env.beginTxn({ readOnly: true });
-            return f(new DirectoryReaderLMDB(this.env, this.dbi, txn))
+            return f(new DirectoryReaderLMDB(this.dir, this.env, this.dbi, txn))
                 .then(result => {
                     txn.abort();
                     return result;
@@ -58,7 +74,7 @@ export class DirectoryLMDB implements Directory {
         let txn: lmdb.Txn;
         try {
             txn = this.env.beginTxn({ readOnly: false });
-            return f(new DirectoryWriterLMDB(this.env, this.dbi, txn))
+            return f(new DirectoryWriterLMDB(this.dir, this.env, this.dbi, txn))
                 .then(result => {
                     txn.commit();
                     return result;
@@ -76,13 +92,16 @@ export class DirectoryLMDB implements Directory {
     }
 
     public close() {
-        this.dbi.close();
-        this.env.close();
+        if (this.dir === "") {
+            this.dbi.close();
+            this.env.close();
+        }
     }
 }
 
 class DirectoryReaderLMDB implements DirectoryReader {
     public constructor(
+        protected readonly dir: string,
         protected readonly env: lmdb.Env,
         protected readonly dbi: lmdb.Dbi,
         protected readonly txn: lmdb.Txn,
@@ -93,7 +112,8 @@ class DirectoryReaderLMDB implements DirectoryReader {
             try {
                 const result = new Array<DirectoryEntry>();
                 const cursor = new lmdb.Cursor(this.txn, this.dbi);
-                visitEachMatch(Array.from(paths), cursor, () => {
+                const paths0 = dpath.prefix(this.dir, ...paths);
+                visitEachMatch(paths0, cursor, () => {
                     cursor.getCurrentBinary((path, value) => {
                         result.push({ path, value });
                     });
@@ -108,8 +128,8 @@ class DirectoryReaderLMDB implements DirectoryReader {
 }
 
 class DirectoryWriterLMDB extends DirectoryReaderLMDB implements DirectoryWriter {
-    public constructor(env: lmdb.Env, dbi: any, txn: lmdb.Txn) {
-        super(env, dbi, txn);
+    public constructor(dir: string, env: lmdb.Env, dbi: any, txn: lmdb.Txn) {
+        super(dir, env, dbi, txn);
     }
 
     public add(entries: Iterable<DirectoryEntry>): Promise<void> {
@@ -121,14 +141,12 @@ class DirectoryWriterLMDB extends DirectoryReaderLMDB implements DirectoryWriter
                             "Path not fully qualified: '" + entry.path + "'"
                         );
                     }
-                    if (!entry.path.startsWith(".")) {
-                        entry.path = "." + entry.path;
-                    }
-                    this.txn.putBinary(this.dbi, entry.path, entry.value);
+                    const p = dpath.join(this.dir, entry.path);
+                    this.txn.putBinary(this.dbi, p, entry.value);
                 }
                 resolve();
-            } catch (exception) {
-                reject(exception);
+            } catch (error) {
+                reject(error);
             }
         });
     }
@@ -137,13 +155,12 @@ class DirectoryWriterLMDB extends DirectoryReaderLMDB implements DirectoryWriter
         return new Promise((resolve, reject) => {
             try {
                 const cursor = new lmdb.Cursor(this.txn, this.dbi);
-                visitEachMatch(Array.from(paths), cursor, () => {
-                    cursor.del();
-                });
+                const paths0 = dpath.prefix(this.dir, ...paths);
+                visitEachMatch(paths0, cursor, () => cursor.del());
                 cursor.close();
                 resolve();
-            } catch (exception) {
-                reject(exception);
+            } catch (error) {
+                reject(error);
             }
         });
     }
@@ -167,8 +184,10 @@ function filterOverlappingPaths(paths: string[]) {
 }
 
 function visitEachMatch(paths: string[], cursor: lmdb.Cursor, f: () => void) {
-    paths = (paths && paths.length > 0) ? filterOverlappingPaths(paths) : ["."];
-    paths.forEach(path => {
+    if (!paths || paths.length === 0) {
+        return;
+    }
+    filterOverlappingPaths(paths).forEach(path => {
         if (!path.startsWith(".")) {
             path = "." + path;
         }

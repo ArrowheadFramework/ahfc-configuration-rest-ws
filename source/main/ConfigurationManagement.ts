@@ -1,4 +1,7 @@
 import * as acml from "./acml";
+import * as apes from "./apes";
+import * as db from "./db";
+import * as io from "./io";
 
 /**
  * An object useful for managing configuration data.
