@@ -260,6 +260,60 @@
 			"response": []
 		},
 		{
+			"name": "PatchDocuments (Valid)",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n\t{\n\t\t\"DocumentName\": \"eu.arrowhead.example.valves.X10\",\n\t\t\"Path\": \"Comment\",\n\t\t\"Patch\": \"This comment was added by a patch.\"\n\t},\n\t{\n\t\t\"DocumentName\": \"eu.arrowhead.example.valves.X11\",\n        \"Path\": \"Preassure\",\n        \"Patch\": 8789\n    }\n]"
+				},
+				"url": {
+					"raw": "{{host}}/documents",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"documents"
+					]
+				},
+				"description": "`Service: ConfigurationManagement`\n\nLists all available documents with a document name that contains the leading label `eu.`, which happens to be all of them added in `AddDocuments (1)`. Note that the trailing dot is used to signify that all documents with the same leading labels are desired, rather an exact match."
+			},
+			"response": []
+		},
+		{
+			"name": "PatchDocuments (Invalid)",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n\t{\n\t\t\"DocumentName\": \"eu.arrowhead.example.valves.X120\",\n\t\t\"Path\": \"Comment\",\n\t\t\"Patch\": \"This document doesn't exist.\"\n\t},\n\t{\n\t\t\"DocumentName\": \"eu.arrowhead.example.pumps.A2\",\n\t\t\"Path\": \"Tag\",\n\t\t\"Patch\": \"PINK\"\n\t},\n\t{\n\t\t\"DocumentName\": \"eu.arrowhead.example.pumps.B1\",\n\t\t\"Path\": \"Extra\",\n\t\t\"Patch\": 9000\n\t}\n]"
+				},
+				"url": {
+					"raw": "{{host}}/documents",
+					"host": [
+						"{{host}}"
+					],
+					"path": [
+						"documents"
+					]
+				},
+				"description": "`Service: ConfigurationManagement`\n\nLists all available documents with a document name that contains the leading label `eu.`, which happens to be all of them added in `AddDocuments (1)`. Note that the trailing dot is used to signify that all documents with the same leading labels are desired, rather an exact match."
+			},
+			"response": []
+		},
+		{
 			"name": "RemoveDocuments",
 			"request": {
 				"method": "DELETE",
