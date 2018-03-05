@@ -62,7 +62,7 @@ export abstract class WriterList {
                 }
             });
         }
-        if (typeof value[Symbol.iterator] === "function") {
+        if (typeof value[Symbol.iterator] === "function" || Array.isArray(value)) {
             return this.addList(writer => {
                 for (const item of value) {
                     writer.add(item);
@@ -173,7 +173,7 @@ export abstract class WriterMap {
                 }
             });
         }
-        if (typeof value[Symbol.iterator] === "function") {
+        if (typeof value[Symbol.iterator] === "function" || Array.isArray(value)) {
             return this.addList(key, writer => {
                 for (const item of value) {
                     writer.add(item);
